@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Mother</string>
+
+    <!-- Bottom navigation -->
+    <string name="nav_dashboard">Dashboard</string>
+    <string name="nav_calendar">Kalender</string>
+    <string name="nav_tasks">Tugas</string>
+    <string name="nav_progress">Progres</string>
+    <string name="nav_settings">Pengaturan</string>
+
+    <!-- Placeholder screens -->
+    <string name="coming_soon">Segera hadir</string>
+    <string name="coming_soon_description">Modul ini akan tersedia pada pengembangan berikutnya.</string>
+
+    <!-- Dashboard -->
+    <string name="dashboard_greeting_morning">Selamat Pagi</string>
+    <string name="dashboard_greeting_afternoon">Selamat Siang</string>
+    <string name="dashboard_greeting_evening">Selamat Malam</string>
+    <string name="dashboard_streak_days">🔥 %1$d Hari</string>
+    <string name="dashboard_target_today">Target Hari Ini</string>
+    <string name="dashboard_target_progress">%1$s / %2$s</string>
+    <string name="dashboard_next_activity">Aktivitas Berikutnya</string>
+    <string name="dashboard_next_activity_empty">Tidak ada aktivitas berikutnya.</string>
+    <string name="dashboard_deadlines">Deadline Terdekat</string>
+    <string name="dashboard_deadlines_empty">Belum ada deadline.</string>
+    <string name="dashboard_schedule_today">Jadwal Hari Ini</string>
+    <string name="dashboard_schedule_empty">Belum ada aktivitas hari ini.</string>
+    <string name="dashboard_quick_add_task">Tambah Tugas</string>
+    <string name="dashboard_quick_add_schedule">Tambah Jadwal</string>
+    <string name="dashboard_quick_start_timer">Mulai Timer</string>
+    <string name="dashboard_start">Mulai</string>
+    <string name="dashboard_no_streak">🔥 0 Hari</string>
+
+    <!-- Error / loading -->
+    <string name="error_title">Terjadi Kesalahan</string>
+    <string name="error_retry">Coba Lagi</string>
+    <string name="loading">Memuat…</string>
+
+    <!-- Quick add -->
+    <string name="quick_add">Tambah</string>
+    <string name="quick_add_schedule">Tambah Jadwal</string>
+    <string name="quick_add_task">Tambah Tugas</string>
+    <string name="quick_add_habit">Tambah Kebiasaan</string>
+    <string name="quick_add_session">Tambah Sesi Manual</string>
+</resources>
