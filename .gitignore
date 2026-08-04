@@ -17,3 +17,6 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Internal documentation (not part of the app source)
+Docs/
