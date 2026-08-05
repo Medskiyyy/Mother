@@ -28,4 +28,9 @@ object Routes {
     const val CREATE_TASK = "task/create"
     const val CREATE_SCHEDULE = "schedule/create"
     const val CREATE_HABIT = "habit/create"
+    const val SESSIONS = "sessions"
+    const val CREATE_SESSION = "session/create"
+    const val EDIT_SESSION = "session/edit/{sessionId}"
+
+    fun editSession(sessionId: String): String = "session/edit/$sessionId"
 }

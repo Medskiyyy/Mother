@@ -25,6 +25,13 @@ interface ScheduleDao {
     @Query("SELECT * FROM schedule ORDER BY startTime ASC")
     fun observeAll(): Flow<List<ScheduleEntity>>
 
+    /** Schedules whose status can still change automatically (not terminal). */
+    @Query("SELECT * FROM schedule WHERE status IN ('UPCOMING', 'RUNNING')")
+    suspend fun getPending(): List<ScheduleEntity>
+
+    @Query("UPDATE schedule SET status = :status, updatedAt = :updatedAt WHERE id = :id")
+    suspend fun updateStatus(id: String, status: String, updatedAt: Long)
+
     @Query("SELECT * FROM schedule WHERE id = :id")
     suspend fun getById(id: String): ScheduleEntity?
 

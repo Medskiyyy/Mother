@@ -32,6 +32,34 @@ object TimeUtils {
     /** End of the current local day (exclusive). */
     fun todayEnd(): Long = endOfDay(System.currentTimeMillis())
 
+    /**
+     * Local start of yesterday, exclusive-end, as epoch millis. Use it with
+     * [startOfDay] as a half-open [start, end) range: "sessions from the
+     * beginning of time until the end of yesterday".
+     */
+    fun endOfYesterday(now: Long = System.currentTimeMillis()): Long = startOfDay(now)
+
+    /** Start of the month containing [epochMillis], in the device's local zone. */
+    fun startOfMonth(epochMillis: Long): Long =
+        toLocalDate(epochMillis).withDayOfMonth(1).atStartOfDay(zone).toInstant().toEpochMilli()
+
+    /** Start of the month after [epochMillis], in the device's local zone. */
+    fun startOfNextMonth(epochMillis: Long): Long =
+        toLocalDate(epochMillis).withDayOfMonth(1).plusMonths(1).atStartOfDay(zone).toInstant().toEpochMilli()
+
+    /** Combines the local date of [dayEpochMillis] with a wall-clock time into epoch millis. */
+    fun atLocalTime(dayEpochMillis: Long, hour: Int, minute: Int): Long =
+        toLocalDate(dayEpochMillis).atTime(java.time.LocalTime.of(hour, minute))
+            .atZone(zone).toInstant().toEpochMilli()
+
+    /** Hour-of-day of [epochMillis] in the local zone. */
+    fun hourOf(epochMillis: Long): Int =
+        Instant.ofEpochMilli(epochMillis).atZone(zone).hour
+
+    /** Minute-of-hour of [epochMillis] in the local zone. */
+    fun minuteOf(epochMillis: Long): Int =
+        Instant.ofEpochMilli(epochMillis).atZone(zone).minute
+
     /** Renders an epoch millis as "HH:mm" in the local zone. */
     fun formatTime(epochMillis: Long): String =
         Instant.ofEpochMilli(epochMillis).atZone(zone)
@@ -63,7 +91,7 @@ object TimeUtils {
     /** Counts consecutive days (ending today) that have at least one study session. */
     fun computeStreak(sessionDayStarts: List<Long>): Int {
         if (sessionDayStarts.isEmpty()) return 0
-        val days = sessionDayStarts.map { localDate(it) }.toSet()
+        val days = sessionDayStarts.map { toLocalDate(it) }.toSet()
         var current = LocalDate.now()
         // If today has no session yet, streak may still be alive from yesterday.
         if (current !in days) current = current.minusDays(1)
@@ -75,6 +103,25 @@ object TimeUtils {
         return streak
     }
 
-    private fun localDate(epochMillis: Long): LocalDate =
+    /** Longest run of consecutive days that each have at least one study session. */
+    fun computeBestStreak(sessionDayStarts: List<Long>): Int {
+        if (sessionDayStarts.isEmpty()) return 0
+        val days = sessionDayStarts.map { toLocalDate(it) }.toSortedSet()
+        var best = 1
+        var run = 1
+        var previous: LocalDate? = null
+        for (day in days) {
+            if (previous != null && day == previous.plusDays(1)) {
+                run++
+                if (run > best) best = run
+            } else if (previous != null) {
+                run = 1
+            }
+            previous = day
+        }
+        return best
+    }
+
+    fun toLocalDate(epochMillis: Long): LocalDate =
         Instant.ofEpochMilli(epochMillis).atZone(zone).toLocalDate()
 }

@@ -14,6 +14,7 @@ class ValidationException(val code: Code, message: String) : IllegalArgumentExce
         CATEGORY_IN_USE,
         END_BEFORE_START,
         NON_POSITIVE_TARGET,
-        NON_POSITIVE_DURATION
+        NON_POSITIVE_DURATION,
+        NO_RESTORES_LEFT
     }
 }

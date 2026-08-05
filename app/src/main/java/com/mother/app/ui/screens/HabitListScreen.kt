@@ -1,7 +1,9 @@
 package com.mother.app.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -12,9 +14,16 @@ import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material3.Card
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -26,9 +35,13 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.mother.app.R
 import com.mother.app.data.local.entity.HabitEntity
+import com.mother.app.data.local.entity.RestoreHistoryEntity
 import com.mother.app.data.local.entity.StudySessionEntity
 import com.mother.app.data.repository.HabitRepository
+import com.mother.app.data.repository.HabitStats
+import com.mother.app.data.repository.RestoreStreakRepository
 import com.mother.app.data.repository.StudySessionRepository
+import com.mother.app.data.repository.ValidationException
 import com.mother.app.di.AppContainer
 import com.mother.app.ui.components.EmptyState
 import com.mother.app.util.TimeUtils
@@ -40,19 +53,31 @@ import kotlinx.coroutines.launch
 
 data class HabitProgress(
     val habit: HabitEntity,
-    val todayMinutes: Int
+    val todayMinutes: Int,
+    val dayStatus: HabitStats.DayStatus,
+    val currentStreak: Int,
+    val bestStreak: Int,
+    val canRestore: Boolean
+)
+
+data class HabitListUiState(
+    val items: List<HabitProgress> = emptyList(),
+    val remainingRestores: Int = 0,
+    val errorMessage: String? = null
 )
 
 class HabitListViewModel(
     private val habitRepository: HabitRepository,
-    private val studySessionRepository: StudySessionRepository
+    private val studySessionRepository: StudySessionRepository,
+    private val restoreStreakRepository: RestoreStreakRepository
 ) : ViewModel() {
 
-    private val _items = MutableStateFlow<List<HabitProgress>>(emptyList())
-    val items: StateFlow<List<HabitProgress>> = _items.asStateFlow()
+    private val _uiState = MutableStateFlow(HabitListUiState())
+    val uiState: StateFlow<HabitListUiState> = _uiState.asStateFlow()
 
     private var habits: List<HabitEntity> = emptyList()
     private var sessions: List<StudySessionEntity> = emptyList()
+    private var restores: List<RestoreHistoryEntity> = emptyList()
 
     init {
         viewModelScope.launch {
@@ -61,64 +86,142 @@ class HabitListViewModel(
                 rebuild()
             }
         }
-        val dayStart = TimeUtils.todayStart()
-        val dayEnd = TimeUtils.todayEnd()
         viewModelScope.launch {
-            studySessionRepository.observeRange(dayStart, dayEnd).collect { list ->
+            studySessionRepository.observeAllAsc().collect { list ->
                 sessions = list
+                rebuild()
+            }
+        }
+        viewModelScope.launch {
+            restoreStreakRepository.observeAll().collect { list ->
+                restores = list
                 rebuild()
             }
         }
     }
 
-    private fun rebuild() {
-        val minutesByHabit = sessions.groupBy { it.habitId }
+    private suspend fun rebuild() {
+        val now = System.currentTimeMillis()
+        val todayStart = TimeUtils.startOfDay(now)
+        val todayEnd = TimeUtils.endOfDay(now)
+        val todayMinutesByHabit = sessions.asSequence()
+            .filter { it.startTime in todayStart until todayEnd }
+            .groupBy { it.habitId }
             .mapValues { (_, list) -> list.sumOf { it.durationMinute } }
-        _items.update {
-            habits.map { habit ->
-                HabitProgress(habit = habit, todayMinutes = minutesByHabit[habit.id] ?: 0)
+
+        val remaining = restoreStreakRepository.remainingRestores()
+        _uiState.update {
+            it.copy(
+                remainingRestores = remaining,
+                items = habits.map { habit ->
+                    val todayMinutes = todayMinutesByHabit[habit.id] ?: 0
+                    HabitProgress(
+                        habit = habit,
+                        todayMinutes = todayMinutes,
+                        dayStatus = HabitStats.dayStatus(habit, todayMinutes),
+                        currentStreak = HabitStats.currentStreak(habit.id, sessions, restores),
+                        bestStreak = HabitStats.bestStreak(habit.id, sessions, restores),
+                        canRestore = HabitStats.canRestore(habit.id, sessions, restores, remaining)
+                    )
+                }
+            )
+        }
+    }
+
+    /** Uses one monthly restore to reconnect the habit's broken streak (PRD §14). */
+    fun restoreStreak(habit: HabitEntity) {
+        viewModelScope.launch {
+            try {
+                restoreStreakRepository.restore(reason = habit.id)
+                _uiState.update { it.copy(errorMessage = null) }
+            } catch (e: ValidationException) {
+                _uiState.update { it.copy(errorMessage = e.message) }
             }
         }
     }
 
+    fun dismissError() = _uiState.update { it.copy(errorMessage = null) }
+
     companion object {
         fun factory(container: AppContainer): ViewModelProvider.Factory = viewModelFactory {
-            initializer { HabitListViewModel(container.habitRepository, container.studySessionRepository) }
+            initializer {
+                HabitListViewModel(
+                    container.habitRepository,
+                    container.studySessionRepository,
+                    container.restoreStreakRepository
+                )
+            }
         }
     }
 }
 
 @Composable
 fun HabitListScreen(viewModel: HabitListViewModel) {
-    val items by viewModel.items.collectAsStateWithLifecycle()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    if (items.isEmpty()) {
-        EmptyState(
-            icon = Icons.Filled.Repeat,
-            title = stringResource(R.string.habits_empty_title),
-            description = stringResource(R.string.habits_empty_description)
-        )
-        return
+    state.errorMessage?.let { message ->
+        LaunchedEffect(message) {
+            snackbarHostState.showSnackbar(message)
+            viewModel.dismissError()
+        }
     }
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        items(items, key = { it.habit.id }) { item ->
-            HabitRow(item = item)
+    Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { innerPadding ->
+        if (state.items.isEmpty()) {
+            EmptyState(
+                icon = Icons.Filled.Repeat,
+                title = stringResource(R.string.habits_empty_title),
+                description = stringResource(R.string.habits_empty_description),
+                modifier = Modifier.padding(innerPadding)
+            )
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(state.items, key = { it.habit.id }) { item ->
+                    HabitRow(
+                        item = item,
+                        remainingRestores = state.remainingRestores,
+                        onRestore = { viewModel.restoreStreak(item.habit) }
+                    )
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun HabitRow(item: HabitProgress) {
+private fun HabitRow(item: HabitProgress, remainingRestores: Int, onRestore: () -> Unit) {
     val target = item.habit.targetMinute.coerceAtLeast(1)
     val progress = (item.todayMinutes.toFloat() / target).coerceIn(0f, 1f)
+    val statusLabel = when (item.dayStatus) {
+        HabitStats.DayStatus.NOT_STARTED -> stringResource(R.string.habit_status_not_started)
+        HabitStats.DayStatus.IN_PROGRESS -> stringResource(R.string.habit_status_in_progress)
+        HabitStats.DayStatus.COMPLETED -> stringResource(R.string.habit_status_completed)
+    }
     Card(modifier = Modifier.fillMaxWidth()) {
-        androidx.compose.foundation.layout.Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = item.habit.title, style = MaterialTheme.typography.titleMedium)
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = item.habit.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.weight(1f)
+                )
+                Text(
+                    text = statusLabel,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
             LinearProgressIndicator(
                 progress = { progress },
                 modifier = Modifier
@@ -131,6 +234,30 @@ private fun HabitRow(item: HabitProgress) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp)
             )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.habit_streak, item.currentStreak),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Text(
+                        text = stringResource(R.string.habit_best_streak, item.bestStreak),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                if (item.canRestore) {
+                    TextButton(onClick = onRestore, enabled = remainingRestores > 0) {
+                        Text(stringResource(R.string.habit_restore, remainingRestores))
+                    }
+                }
+            }
         }
     }
 }

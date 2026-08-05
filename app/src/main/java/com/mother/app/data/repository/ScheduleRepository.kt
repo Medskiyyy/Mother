@@ -19,6 +19,12 @@ interface ScheduleRepository {
 
     /** True when another schedule overlaps [start, end) (PRD §12 conflict warning). */
     suspend fun hasConflict(start: Long, end: Long, excludeId: String = ""): Boolean
+
+    /** Schedules whose status may still change automatically. */
+    suspend fun getPending(): List<ScheduleEntity>
+
+    /** Sets [status] directly (used by the status syncer; skips validation). */
+    suspend fun updateStatus(id: String, status: com.mother.app.data.model.StatusSchedule, updatedAt: Long)
 }
 
 class ScheduleRepositoryImpl(private val dao: ScheduleDao) : ScheduleRepository {
@@ -49,4 +55,9 @@ class ScheduleRepositoryImpl(private val dao: ScheduleDao) : ScheduleRepository 
 
     override suspend fun hasConflict(start: Long, end: Long, excludeId: String): Boolean =
         dao.countOverlapping(start, end, excludeId) > 0
+
+    override suspend fun getPending(): List<ScheduleEntity> = dao.getPending()
+
+    override suspend fun updateStatus(id: String, status: com.mother.app.data.model.StatusSchedule, updatedAt: Long) =
+        dao.updateStatus(id, status.name, updatedAt)
 }

@@ -6,8 +6,11 @@ import com.mother.app.data.repository.CategoryRepository
 import com.mother.app.data.repository.CategoryRepositoryImpl
 import com.mother.app.data.repository.HabitRepository
 import com.mother.app.data.repository.HabitRepositoryImpl
+import com.mother.app.data.repository.RestoreStreakRepository
+import com.mother.app.data.repository.RestoreStreakRepositoryImpl
 import com.mother.app.data.repository.ScheduleRepository
 import com.mother.app.data.repository.ScheduleRepositoryImpl
+import com.mother.app.data.repository.ScheduleStatusSyncer
 import com.mother.app.data.repository.SettingRepository
 import com.mother.app.data.repository.SettingRepositoryImpl
 import com.mother.app.data.repository.StudySessionRepository
@@ -36,7 +39,9 @@ class AppContainer(context: Context) {
     }
     val settingRepository: SettingRepository by lazy { SettingRepositoryImpl(database.settingDao()) }
     val scheduleRepository: ScheduleRepository by lazy { ScheduleRepositoryImpl(database.scheduleDao()) }
+    val scheduleStatusSyncer: ScheduleStatusSyncer by lazy { ScheduleStatusSyncer(scheduleRepository) }
     val taskRepository: TaskRepository by lazy { TaskRepositoryImpl(database.taskDao()) }
     val habitRepository: HabitRepository by lazy { HabitRepositoryImpl(database.habitDao()) }
     val studySessionRepository: StudySessionRepository by lazy { StudySessionRepositoryImpl(database.studySessionDao()) }
+    val restoreStreakRepository: RestoreStreakRepository by lazy { RestoreStreakRepositoryImpl(database.restoreHistoryDao()) }
 }

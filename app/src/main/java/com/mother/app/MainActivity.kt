@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddTask
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Repeat
+import androidx.compose.material.icons.filled.School
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -41,12 +42,14 @@ import com.mother.app.ui.navigation.Routes
 import com.mother.app.ui.navigation.TopLevelDestination
 import com.mother.app.ui.screens.CreateHabitScreen
 import com.mother.app.ui.screens.CreateScheduleScreen
+import com.mother.app.ui.screens.CreateStudySessionScreen
 import com.mother.app.ui.screens.CreateTaskScreen
-import com.mother.app.ui.screens.HabitListScreen
+import com.mother.app.ui.progress.ProgressScreen
 import com.mother.app.ui.screens.HabitListViewModel
 import com.mother.app.ui.screens.PlaceholderScreen
 import com.mother.app.ui.screens.ScheduleListScreen
 import com.mother.app.ui.screens.ScheduleListViewModel
+import com.mother.app.ui.screens.StudySessionListViewModel
 import com.mother.app.ui.tasks.TasksScreen
 import com.mother.app.ui.tasks.TasksViewModel
 import com.mother.app.ui.theme.MotherTheme
@@ -67,6 +70,10 @@ class MainActivity : ComponentActivity() {
 
     private val habitListViewModel: HabitListViewModel by viewModels {
         HabitListViewModel.factory((application as MotherApplication).container)
+    }
+
+    private val studySessionListViewModel: StudySessionListViewModel by viewModels {
+        StudySessionListViewModel.factory((application as MotherApplication).container)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -148,7 +155,13 @@ class MainActivity : ComponentActivity() {
                     TasksScreen(viewModel = tasksViewModel)
                 }
                 composable(TopLevelDestination.Progress.route) {
-                    HabitListScreen(viewModel = habitListViewModel)
+                    ProgressScreen(
+                        habitListViewModel = habitListViewModel,
+                        studySessionListViewModel = studySessionListViewModel,
+                        onEditSession = { sessionId ->
+                            navController.navigate(Routes.editSession(sessionId))
+                        }
+                    )
                 }
                 composable(TopLevelDestination.Settings.route) {
                     PlaceholderScreen(stringResource(TopLevelDestination.Settings.labelRes))
@@ -174,6 +187,21 @@ class MainActivity : ComponentActivity() {
                         onCancelled = { navController.popBackStack() }
                     )
                 }
+                composable(Routes.CREATE_SESSION) {
+                    CreateStudySessionScreen(
+                        container = (application as MotherApplication).container,
+                        onSaved = { navController.popBackStack() },
+                        onCancelled = { navController.popBackStack() }
+                    )
+                }
+                composable(Routes.EDIT_SESSION) { backStackEntry ->
+                    CreateStudySessionScreen(
+                        container = (application as MotherApplication).container,
+                        sessionId = backStackEntry.arguments?.getString("sessionId"),
+                        onSaved = { navController.popBackStack() },
+                        onCancelled = { navController.popBackStack() }
+                    )
+                }
             }
         }
 
@@ -195,6 +223,7 @@ class MainActivity : ComponentActivity() {
             QuickAddRow(Icons.Filled.Event, R.string.quick_add_schedule) { onPick(Routes.CREATE_SCHEDULE) }
             QuickAddRow(Icons.Filled.AddTask, R.string.quick_add_task) { onPick(Routes.CREATE_TASK) }
             QuickAddRow(Icons.Filled.Repeat, R.string.quick_add_habit) { onPick(Routes.CREATE_HABIT) }
+            QuickAddRow(Icons.Filled.School, R.string.quick_add_session) { onPick(Routes.CREATE_SESSION) }
         }
     }
 

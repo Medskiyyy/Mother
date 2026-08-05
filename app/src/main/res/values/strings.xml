@@ -116,4 +116,27 @@
     <string name="status_label_completed">Selesai</string>
     <string name="status_label_missed">Terlewat</string>
     <string name="status_label_cancelled">Dibatalkan</string>
+
+    <!-- Study sessions -->
+    <string name="session_form_title_manual">Tambah Sesi Manual</string>
+    <string name="edit_session_title">Edit Sesi</string>
+    <string name="field_habit">Kebiasaan</string>
+    <string name="field_duration">Durasi (menit)</string>
+    <string name="field_note">Catatan</string>
+    <string name="error_habit_required">Pilih kebiasaan terlebih dahulu.</string>
+    <string name="sessions_empty_title">Belum ada sesi belajar</string>
+    <string name="sessions_empty_description">Sesi belajar dari timer atau input manual akan muncul di sini.</string>
+    <string name="session_total">Total belajar: %1$s</string>
+
+    <!-- Progress tabs -->
+    <string name="progress_tab_habits">Kebiasaan</string>
+    <string name="progress_tab_sessions">Sesi Belajar</string>
+
+    <!-- Habit streaks -->
+    <string name="habit_streak">🔥 %1$d hari</string>
+    <string name="habit_best_streak">Terbaik: %1$d hari</string>
+    <string name="habit_status_not_started">Belum mulai</string>
+    <string name="habit_status_in_progress">Sedang berjalan</string>
+    <string name="habit_status_completed">Selesai</string>
+    <string name="habit_restore">Pulihkan streak (%1$d sisa)</string>
 </resources>
