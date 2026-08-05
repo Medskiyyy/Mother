@@ -14,7 +14,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -58,6 +57,7 @@ import kotlinx.coroutines.launch
 import java.time.LocalTime
 import java.time.ZonedDateTime
 import java.util.UUID
+import com.mother.app.ui.components.NeoButton
 
 data class CreateScheduleUiState(
     val title: String = "",
@@ -347,13 +347,12 @@ fun CreateScheduleScreen(
                 onToggleOffset = viewModel::toggleReminderOffset
             )
             Spacer(Modifier.height(4.dp))
-            Button(
+            NeoButton(
+                text = stringResource(R.string.form_save),
                 onClick = viewModel::save,
-                enabled = !state.saving,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(stringResource(R.string.form_save))
-            }
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !state.saving
+            )
         }
     }
 

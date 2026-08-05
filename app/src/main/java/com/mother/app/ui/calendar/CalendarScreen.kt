@@ -187,7 +187,12 @@ fun CalendarScreen(viewModel: CalendarViewModel) {
         items(state.daySchedules, key = { "s_" + it.id }) { schedule ->
             NeoCard(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text(schedule.title, style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        schedule.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    )
                     Text(
                         "${TimeUtils.formatTime(schedule.startTime)} - ${TimeUtils.formatTime(schedule.endTime)} " +
                             "(${statusLabel(schedule.status)})",
@@ -200,7 +205,12 @@ fun CalendarScreen(viewModel: CalendarViewModel) {
         items(state.dayTasks, key = { "t_" + it.id }) { task ->
             NeoCard(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text(task.title, style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        task.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    )
                     Text(
                         stringResource(R.string.field_deadline) + ": " +
                             TimeUtils.formatTime(task.deadline ?: 0L),

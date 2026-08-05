@@ -13,7 +13,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Button
 import com.mother.app.ui.components.NeoCard
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -23,7 +22,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -64,6 +62,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.UUID
+import com.mother.app.ui.components.NeoButton
+import com.mother.app.ui.components.NeoOutlinedButton
 
 enum class PomodoroPhase { SETUP, FOCUS, BREAK, DONE }
 
@@ -339,12 +339,11 @@ private fun PomodoroSetup(state: PomodoroUiState, viewModel: PomodoroViewModel) 
         selectedId = state.habitId,
         onSelected = viewModel::onHabitChange
     )
-    Button(
+    NeoButton(
+        text = stringResource(R.string.pomodoro_start),
         onClick = viewModel::start,
         modifier = Modifier.fillMaxWidth()
-    ) {
-        Text(stringResource(R.string.pomodoro_start))
-    }
+    )
 }
 
 @Composable
@@ -384,17 +383,20 @@ private fun PomodoroRunning(state: PomodoroUiState, viewModel: PomodoroViewModel
         Spacer(Modifier.height(24.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             if (state.paused) {
-                Button(onClick = viewModel::resume) {
-                    Text(stringResource(R.string.action_resume))
-                }
+                NeoButton(
+                    text = stringResource(R.string.action_resume),
+                    onClick = viewModel::resume
+                )
             } else {
-                OutlinedButton(onClick = viewModel::pause) {
-                    Text(stringResource(R.string.action_pause))
-                }
+                NeoOutlinedButton(
+                    text = stringResource(R.string.action_pause),
+                    onClick = viewModel::pause
+                )
             }
-            OutlinedButton(onClick = viewModel::reset) {
-                Text(stringResource(R.string.pomodoro_reset))
-            }
+            NeoOutlinedButton(
+                text = stringResource(R.string.pomodoro_reset),
+                onClick = viewModel::reset
+            )
         }
     }
 }
@@ -419,9 +421,11 @@ private fun PomodoroDone(state: PomodoroUiState, viewModel: PomodoroViewModel) {
             )
         }
     }
-    Button(onClick = viewModel::reset, modifier = Modifier.fillMaxWidth()) {
-        Text(stringResource(R.string.pomodoro_reset))
-    }
+    NeoButton(
+        text = stringResource(R.string.pomodoro_reset),
+        onClick = viewModel::reset,
+        modifier = Modifier.fillMaxWidth()
+    )
 }
 
 @Composable

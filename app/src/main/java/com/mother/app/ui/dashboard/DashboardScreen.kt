@@ -14,30 +14,38 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.EventNote
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Timer
-import com.mother.app.ui.components.NeoCard
+import androidx.compose.material.icons.filled.Whatshot
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mother.app.R
 import com.mother.app.data.local.entity.ScheduleEntity
 import com.mother.app.data.local.entity.TaskEntity
+import com.mother.app.data.model.Priority
 import com.mother.app.ui.components.ErrorState
 import com.mother.app.ui.components.LoadingState
+import com.mother.app.ui.components.NeoCard
+import com.mother.app.ui.components.NeoOutlinedButton
+import com.mother.app.ui.screens.priorityLabel
+import com.mother.app.ui.screens.statusLabel
+import com.mother.app.ui.theme.Ink
+import com.mother.app.ui.theme.InkSoft
 import com.mother.app.util.TimeUtils
 
 @Composable
@@ -111,7 +119,7 @@ private fun Header(greeting: String, dateLabel: String, onSearch: () -> Unit) {
             Text(
                 text = greeting,
                 style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(Modifier.height(4.dp))
             Text(
@@ -126,20 +134,34 @@ private fun Header(greeting: String, dateLabel: String, onSearch: () -> Unit) {
     }
 }
 
+/** Streak hero card: yellow block, huge tabular number, flame badge. */
 @Composable
 private fun StreakCard(streak: Int) {
-    NeoCard(modifier = Modifier.fillMaxWidth()) {
+    NeoCard(
+        modifier = Modifier.fillMaxWidth(),
+        containerColor = MaterialTheme.colorScheme.primary,
+        contentColor = MaterialTheme.colorScheme.onPrimary
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(20.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(text = "🔥", style = MaterialTheme.typography.headlineMedium)
-            Spacer(Modifier.size(8.dp))
-            Text(
-                text = stringResource(R.string.dashboard_streak_days, streak),
-                style = MaterialTheme.typography.titleLarge
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.dashboard_streak_label),
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Text(
+                    text = stringResource(R.string.dashboard_streak_value, streak),
+                    style = MaterialTheme.typography.displaySmall
+                )
+            }
+            Icon(
+                imageVector = Icons.Filled.Whatshot,
+                contentDescription = null,
+                modifier = Modifier.size(48.dp)
             )
         }
     }
@@ -204,11 +226,10 @@ private fun NextActivityCard(schedule: ScheduleEntity?, onStartTimer: () -> Unit
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    OutlinedButton(onClick = onStartTimer) {
-                        Icon(Icons.Filled.PlayCircle, contentDescription = null)
-                        Spacer(Modifier.size(4.dp))
-                        Text(stringResource(R.string.dashboard_start))
-                    }
+                    NeoOutlinedButton(
+                        text = stringResource(R.string.dashboard_start),
+                        onClick = onStartTimer
+                    )
                 }
             }
         }
@@ -239,9 +260,20 @@ private fun EmptyRow(text: String) {
     }
 }
 
+/** Deadline card colored by priority level (user revision 7). */
 @Composable
 private fun DeadlineRow(task: TaskEntity) {
-    NeoCard(modifier = Modifier.fillMaxWidth()) {
+    val backgroundColor = when (task.priority) {
+        Priority.AMAN -> Color(0xFFBBE5C0)
+        Priority.WASPADA -> Color(0xFFFFE08A)
+        Priority.MEPET -> Color(0xFFFFC79B)
+        Priority.URGENT -> Color(0xFFFF9B9B)
+    }
+    NeoCard(
+        modifier = Modifier.fillMaxWidth(),
+        containerColor = backgroundColor,
+        contentColor = Ink
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -249,17 +281,22 @@ private fun DeadlineRow(task: TaskEntity) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = task.title, style = MaterialTheme.typography.titleMedium)
+                Text(
+                    text = task.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
                 task.deadline?.let {
                     Text(
                         text = TimeUtils.formatFullDate(it),
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = InkSoft
                     )
                 }
             }
             Text(
-                text = task.priority.name,
+                text = priorityLabel(task.priority),
                 style = MaterialTheme.typography.labelMedium
             )
         }
@@ -282,7 +319,12 @@ private fun ScheduleRow(schedule: ScheduleEntity) {
             )
             Spacer(Modifier.size(12.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = schedule.title, style = MaterialTheme.typography.titleMedium)
+                Text(
+                    text = schedule.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
                 Text(
                     text = "${TimeUtils.formatTime(schedule.startTime)} - ${TimeUtils.formatTime(schedule.endTime)}",
                     style = MaterialTheme.typography.bodySmall,
@@ -290,7 +332,7 @@ private fun ScheduleRow(schedule: ScheduleEntity) {
                 )
             }
             Text(
-                text = schedule.status.name,
+                text = statusLabel(schedule.status),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -325,12 +367,29 @@ private fun QuickActions(onStartTimer: () -> Unit) {
     }
 }
 
+/** Neobrutalist icon-on-top quick action; label never overflows. */
 @Composable
 private fun QuickActionButton(label: String, icon: ImageVector, modifier: Modifier = Modifier, onClick: () -> Unit = {}) {
-    OutlinedButton(onClick = onClick, modifier = modifier) {
-        Icon(icon, contentDescription = null)
-        Spacer(Modifier.size(4.dp))
-        Text(label)
+    NeoCard(
+        modifier = modifier,
+        onClick = onClick
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(icon, contentDescription = null)
+            Spacer(Modifier.size(6.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
     }
 }
 

@@ -213,7 +213,12 @@ private fun TaskRow(task: TaskEntity) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = task.title, style = MaterialTheme.typography.titleMedium)
+                Text(
+                    text = task.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                )
                 Text(
                     text = task.deadline?.let { TimeUtils.formatFullDate(it) }
                         ?: stringResource(R.string.field_not_selected),

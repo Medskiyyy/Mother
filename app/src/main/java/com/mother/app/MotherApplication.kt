@@ -2,6 +2,7 @@ package com.mother.app
 
 import android.app.Application
 import com.mother.app.data.timer.ActiveTimerStore
+import com.mother.app.data.timer.TimerPhase
 import com.mother.app.data.timer.TimerService
 import com.mother.app.di.AppContainer
 import kotlinx.coroutines.CoroutineScope
@@ -23,8 +24,11 @@ class MotherApplication : Application() {
         applicationScope.launch { container.scheduleStatusSyncer.syncNow() }
         // Restore the active timer after process death; the foreground service
         // keeps it alive (PRD §16: timer keeps running when the app is closed).
+        // Only a RUNNING timer gets the foreground notification — starting the
+        // service for a paused timer flashes a notification that immediately
+        // disappears, so paused timers stay silent.
         ActiveTimerStore.init(this)
-        if (ActiveTimerStore.activeTimer.value != null) {
+        if (ActiveTimerStore.activeTimer.value?.phase == TimerPhase.RUNNING) {
             TimerService.start(this)
         }
     }

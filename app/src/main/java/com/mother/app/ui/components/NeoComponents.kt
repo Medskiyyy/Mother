@@ -1,6 +1,7 @@
 package com.mother.app.ui.components
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -10,8 +11,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
@@ -21,10 +24,29 @@ import androidx.compose.ui.unit.dp
  */
 
 private val NEO_BORDER_WIDTH = 2.dp
+private val NEO_SHADOW_OFFSET = 4.dp
 
 /**
- * Card with a firm border and flat surface; the built-in pressed state gives
- * a quick tonal feedback within the motion budget.
+ * Hard offset shadow drawn behind a component (Neobrutalism signature).
+ * Use with padding so the shadow stays within the layout bounds:
+ * `Modifier.neoShadow().padding(end = 4.dp, bottom = 4.dp)` (or spacing).
+ */
+fun Modifier.neoShadow(
+    color: Color = Color(0xB31B1B1B),
+    offsetX: Dp = NEO_SHADOW_OFFSET,
+    offsetY: Dp = NEO_SHADOW_OFFSET
+): Modifier = drawBehind {
+    drawRect(
+        color = color,
+        topLeft = androidx.compose.ui.geometry.Offset(offsetX.toPx(), offsetY.toPx()),
+        size = size
+    )
+}
+
+/**
+ * Card with a firm border, flat surface, and a hard offset shadow
+ * (Neobrutalism signature). The built-in pressed state gives quick tonal
+ * feedback within the motion budget.
  */
 @Composable
 fun NeoCard(
@@ -35,17 +57,20 @@ fun NeoCard(
     shape: Shape = MaterialTheme.shapes.medium,
     content: @Composable () -> Unit
 ) {
-    Surface(
-        modifier = modifier,
-        shape = shape,
-        color = containerColor,
-        contentColor = contentColor,
-        border = BorderStroke(NEO_BORDER_WIDTH, MaterialTheme.colorScheme.outline),
-        shadowElevation = 0.dp,
-        onClick = onClick ?: {},
-        enabled = onClick != null
+    androidx.compose.foundation.layout.Box(
+        modifier = modifier.neoShadow().padding(end = NEO_SHADOW_OFFSET, bottom = NEO_SHADOW_OFFSET)
     ) {
-        content()
+        Surface(
+            shape = shape,
+            color = containerColor,
+            contentColor = contentColor,
+            border = BorderStroke(NEO_BORDER_WIDTH, MaterialTheme.colorScheme.outline),
+            shadowElevation = 0.dp,
+            onClick = onClick ?: {},
+            enabled = onClick != null
+        ) {
+            content()
+        }
     }
 }
 

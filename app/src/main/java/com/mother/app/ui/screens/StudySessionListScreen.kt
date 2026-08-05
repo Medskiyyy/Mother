@@ -166,7 +166,12 @@ private fun SessionRow(item: StudySessionItem, onClick: () -> Unit, onDelete: ()
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = item.habitTitle, style = MaterialTheme.typography.titleMedium)
+                Text(
+                    text = item.habitTitle,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                )
                 Text(
                     text = TimeUtils.formatFullDate(session.startTime),
                     style = MaterialTheme.typography.bodySmall,

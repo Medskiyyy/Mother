@@ -50,6 +50,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.mother.app.ui.components.NeoOutlinedButton
 
 data class HabitProgress(
     val habit: HabitEntity,
@@ -259,14 +260,17 @@ private fun HabitRow(
                     )
                 }
                 if (onStartTimer != null) {
-                    TextButton(onClick = onStartTimer) {
-                        Text(stringResource(R.string.habit_start_timer))
-                    }
+                    NeoOutlinedButton(
+                        text = stringResource(R.string.habit_start_timer),
+                        onClick = onStartTimer
+                    )
                 }
                 if (item.canRestore) {
-                    TextButton(onClick = onRestore, enabled = remainingRestores > 0) {
-                        Text(stringResource(R.string.habit_restore, remainingRestores))
-                    }
+                    NeoOutlinedButton(
+                        text = stringResource(R.string.habit_restore, remainingRestores),
+                        onClick = onRestore,
+                        enabled = remainingRestores > 0
+                    )
                 }
             }
         }

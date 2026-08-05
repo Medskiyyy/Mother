@@ -13,7 +13,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Button
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenuItem
@@ -60,6 +59,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.UUID
+import com.mother.app.ui.components.NeoButton
 
 data class CreateTaskUiState(
     val title: String = "",
@@ -272,13 +272,12 @@ fun CreateTaskScreen(
                 )
             }
             Spacer(Modifier.height(4.dp))
-            Button(
+            NeoButton(
+                text = stringResource(R.string.form_save),
                 onClick = viewModel::save,
-                enabled = !state.saving,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(stringResource(R.string.form_save))
-            }
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !state.saving
+            )
         }
     }
 

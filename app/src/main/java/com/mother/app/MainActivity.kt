@@ -8,9 +8,11 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddTask
@@ -21,12 +23,16 @@ import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -36,6 +42,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
@@ -67,6 +74,7 @@ import com.mother.app.ui.progress.HeatmapViewModel
 import com.mother.app.ui.progress.ProgressScreen
 import com.mother.app.ui.progress.StatisticsViewModel
 import com.mother.app.data.backup.BackupManager
+import com.mother.app.ui.components.NeoCard
 import com.mother.app.ui.onboarding.OnboardingScreen
 import com.mother.app.ui.screens.HabitListViewModel
 import com.mother.app.ui.screens.StudySessionListViewModel
@@ -97,7 +105,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private val focusModeViewModel: FocusModeViewModel by viewModels {
-        FocusModeViewModel.factory((application as MotherApplication).container)
+        FocusModeViewModel.factory(applicationContext, (application as MotherApplication).container)
     }
 
     private val pomodoroViewModel: PomodoroViewModel by viewModels {
@@ -244,32 +252,58 @@ class MainActivity : ComponentActivity() {
         Scaffold(
             bottomBar = {
                 if (!isFocusMode) {
-                NavigationBar {
-                    TopLevelDestination.entries.forEach { destination ->
-                        val selected = currentRoute == destination.route
-                        NavigationBarItem(
-                            selected = selected,
-                            onClick = {
-                                navController.navigate(destination.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
+                // Neobrutalism bottom bar: flat surface inside a firm border,
+                // selected items sit on a yellow indicator pill.
+                Surface(
+                    border = BorderStroke(2.dp, MaterialTheme.colorScheme.outline),
+                    color = MaterialTheme.colorScheme.surface
+                ) {
+                    NavigationBar(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        tonalElevation = 0.dp
+                    ) {
+                        TopLevelDestination.entries.forEach { destination ->
+                            val selected = currentRoute == destination.route
+                            NavigationBarItem(
+                                selected = selected,
+                                onClick = {
+                                    navController.navigate(destination.route) {
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
                                     }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            },
-                            icon = { Icon(destination.icon, contentDescription = stringResource(destination.labelRes)) },
-                            label = { Text(stringResource(destination.labelRes)) }
-                        )
+                                },
+                                icon = { Icon(destination.icon, contentDescription = stringResource(destination.labelRes)) },
+                                label = { Text(stringResource(destination.labelRes)) },
+                                colors = NavigationBarItemDefaults.colors(
+                                    selectedIconColor = MaterialTheme.colorScheme.onPrimary,
+                                    selectedTextColor = MaterialTheme.colorScheme.onPrimary,
+                                    indicatorColor = MaterialTheme.colorScheme.primary,
+                                    unselectedIconColor = MaterialTheme.colorScheme.onSurface,
+                                    unselectedTextColor = MaterialTheme.colorScheme.onSurface
+                                )
+                            )
+                        }
                     }
                 }
                 }
             },
-            // Global FAB (UI_SPEC): shown on top-level screens, opens the quick-add sheet.
+            // Global FAB (UI_SPEC): neobrutalist yellow block with firm border.
             floatingActionButton = {
                 if (isTopLevel && !isFocusMode) {
-                    FloatingActionButton(onClick = { showQuickAdd = true }) {
-                        Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.quick_add))
+                    NeoCard(
+                        onClick = { showQuickAdd = true },
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    ) {
+                        androidx.compose.foundation.layout.Box(
+                            modifier = Modifier.size(56.dp),
+                            contentAlignment = androidx.compose.ui.Alignment.Center
+                        ) {
+                            Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.quick_add))
+                        }
                     }
                 }
             }

@@ -41,6 +41,12 @@ class TimerService : Service() {
             stopSelf()
             return START_NOT_STICKY
         }
+        // Never show the foreground notification without a live running timer;
+        // otherwise the notification flashes for a split second on startup.
+        if (ActiveTimerStore.activeTimer.value?.phase != TimerPhase.RUNNING) {
+            stopSelf()
+            return START_NOT_STICKY
+        }
         ensureChannel()
         startForeground(NOTIFICATION_ID, buildNotification())
         scope.launch {

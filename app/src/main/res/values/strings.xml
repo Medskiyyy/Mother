@@ -18,6 +18,8 @@
     <string name="dashboard_greeting_afternoon">Selamat Siang</string>
     <string name="dashboard_greeting_evening">Selamat Malam</string>
     <string name="dashboard_streak_days">🔥 %1$d Hari</string>
+    <string name="dashboard_streak_label">Streak Belajar</string>
+    <string name="dashboard_streak_value">%1$d Hari</string>
     <string name="dashboard_target_today">Target Hari Ini</string>
     <string name="dashboard_target_progress">%1$s / %2$s</string>
     <string name="dashboard_next_activity">Aktivitas Berikutnya</string>

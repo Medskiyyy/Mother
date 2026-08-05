@@ -49,6 +49,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.mother.app.ui.components.NeoOutlinedButton
 
 data class SettingsUiState(
     val setting: AppSettingEntity? = null,
@@ -254,12 +255,16 @@ private fun BackupCard(lastBackup: Long?, busy: Boolean, onExport: () -> Unit, o
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextButton(onClick = onExport, enabled = !busy) {
-                    Text(stringResource(R.string.backup_export))
-                }
-                TextButton(onClick = onImport, enabled = !busy) {
-                    Text(stringResource(R.string.backup_import))
-                }
+                NeoOutlinedButton(
+                    text = stringResource(R.string.backup_export),
+                    onClick = onExport,
+                    enabled = !busy
+                )
+                NeoOutlinedButton(
+                    text = stringResource(R.string.backup_import),
+                    onClick = onImport,
+                    enabled = !busy
+                )
             }
         }
     }

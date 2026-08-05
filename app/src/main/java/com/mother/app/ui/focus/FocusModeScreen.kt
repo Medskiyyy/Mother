@@ -11,13 +11,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Timer
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -48,6 +46,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.UUID
+import com.mother.app.ui.components.NeoButton
+import com.mother.app.ui.components.NeoOutlinedButton
 
 data class FocusModeUiState(
     val habitTitle: String = "",
@@ -66,6 +66,7 @@ data class FocusModeUiState(
  * persists a StudySession (PRD §15).
  */
 class FocusModeViewModel(
+    private val context: android.content.Context,
     private val studySessionRepository: StudySessionRepository
 ) : ViewModel() {
 
@@ -120,9 +121,16 @@ class FocusModeViewModel(
         }
     }
 
-    fun pause() = ActiveTimerStore.pause()
+    /** Pauses the timer; the foreground notification is dropped while paused. */
+    fun pause() {
+        ActiveTimerStore.pause()
+        context.stopService(android.content.Intent(context, com.mother.app.data.timer.TimerService::class.java))
+    }
 
-    fun resume() = ActiveTimerStore.resume()
+    fun resume() {
+        ActiveTimerStore.resume()
+        com.mother.app.data.timer.TimerService.start(context)
+    }
 
     /** Stops the timer and persists the elapsed time as a StudySession (PRD §15). */
     fun stop(onDone: () -> Unit) {
@@ -152,9 +160,10 @@ class FocusModeViewModel(
     }
 
     companion object {
-        fun factory(container: AppContainer): ViewModelProvider.Factory = viewModelFactory {
-            initializer { FocusModeViewModel(container.studySessionRepository) }
-        }
+        fun factory(context: android.content.Context, container: AppContainer): ViewModelProvider.Factory =
+            viewModelFactory {
+                initializer { FocusModeViewModel(context.applicationContext, container.studySessionRepository) }
+            }
     }
 }
 
@@ -223,17 +232,20 @@ fun FocusModeScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally)
             ) {
                 if (state.phase == TimerPhase.RUNNING) {
-                    OutlinedButton(onClick = viewModel::pause) {
-                        Text(stringResource(R.string.action_pause))
-                    }
+                    NeoOutlinedButton(
+                        text = stringResource(R.string.action_pause),
+                        onClick = viewModel::pause
+                    )
                 } else if (state.phase == TimerPhase.PAUSED) {
-                    Button(onClick = viewModel::resume) {
-                        Text(stringResource(R.string.action_resume))
-                    }
+                    NeoButton(
+                        text = stringResource(R.string.action_resume),
+                        onClick = viewModel::resume
+                    )
                 }
-                Button(onClick = { viewModel.stop(onDone = onExit) }) {
-                    Text(stringResource(R.string.action_stop))
-                }
+                NeoButton(
+                    text = stringResource(R.string.action_stop),
+                    onClick = { viewModel.stop(onDone = onExit) }
+                )
             }
         }
     }

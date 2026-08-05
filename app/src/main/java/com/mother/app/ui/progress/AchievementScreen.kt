@@ -167,7 +167,12 @@ private fun AchievementRow(achievement: AchievementEntity) {
                     .weight(1f)
                     .padding(horizontal = 12.dp)
             ) {
-                Text(text = achievement.title, style = MaterialTheme.typography.titleMedium)
+                Text(
+                    text = achievement.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                )
                 LinearProgressIndicator(
                     progress = { progress },
                     modifier = Modifier

@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -74,7 +73,7 @@ fun EmptyState(
         )
         if (actionLabel != null && onAction != null) {
             Spacer(Modifier.height(16.dp))
-            Button(onClick = onAction) { Text(actionLabel) }
+            NeoButton(text = actionLabel, onClick = onAction)
         }
     }
 }
@@ -103,7 +102,8 @@ fun ErrorState(
         )
         if (onRetry != null) {
             Spacer(Modifier.height(16.dp))
-            Button(onClick = onRetry) { Text(stringResource(R.string.error_retry)) }
+            NeoButton(text = stringResource(R.string.error_retry), onClick = onRetry)
         }
     }
 }
+
