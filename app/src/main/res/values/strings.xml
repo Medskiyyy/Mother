@@ -139,4 +139,37 @@
     <string name="habit_status_in_progress">Sedang berjalan</string>
     <string name="habit_status_completed">Selesai</string>
     <string name="habit_restore">Pulihkan streak (%1$d sisa)</string>
+
+    <!-- Timer / Focus Mode -->
+    <string name="timer_channel_name">Timer Belajar</string>
+    <string name="timer_notification_title">Timer sedang berjalan</string>
+    <string name="timer_notification_idle">Timer</string>
+    <string name="action_stop">Stop</string>
+    <string name="action_pause">Jeda</string>
+    <string name="action_resume">Lanjutkan</string>
+    <string name="focus_mode_title">Mode Fokus</string>
+    <string name="focus_mode_exit">Keluar</string>
+    <string name="focus_mode_no_habit">Tidak ada kebiasaan</string>
+    <string name="focus_empty_title">Belum ada timer aktif</string>
+    <string name="focus_empty_description">Mulai timer dari tab Progres dengan memilih sebuah kebiasaan.</string>
+    <string name="focus_start_from_habits">Buka Kebiasaan</string>
+    <string name="timer_busy_title">Timer Sedang Berjalan</string>
+    <string name="timer_busy_message">Selesaikan timer sebelumnya terlebih dahulu.</string>
+    <string name="habit_start_timer">Mulai</string>
+
+    <!-- Pomodoro -->
+    <string name="quick_add_pomodoro">Mulai Pomodoro</string>
+    <string name="pomodoro_title">Pomodoro</string>
+    <string name="pomodoro_focus_minutes">Durasi Fokus (menit)</string>
+    <string name="pomodoro_break_minutes">Durasi Istirahat (menit)</string>
+    <string name="pomodoro_sessions">Jumlah Sesi</string>
+    <string name="pomodoro_optional_habit">Hubungkan ke kebiasaan (opsional)</string>
+    <string name="pomodoro_start">Mulai</string>
+    <string name="pomodoro_phase_focus">Fokus</string>
+    <string name="pomodoro_phase_break">Istirahat</string>
+    <string name="pomodoro_session_counter">Sesi %1$d dari %2$d</string>
+    <string name="pomodoro_reset">Reset</string>
+    <string name="pomodoro_done_title">Pomodoro Selesai</string>
+    <string name="pomodoro_summary">Fokus: %1$s | Istirahat: %2$s | Sesi: %3$d</string>
+    <string name="pomodoro_error_settings">Periksa pengaturan durasi dan jumlah sesi.</string>
 </resources>

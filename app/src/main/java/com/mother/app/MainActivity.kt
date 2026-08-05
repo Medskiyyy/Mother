@@ -13,6 +13,8 @@ import androidx.compose.material.icons.filled.AddTask
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -22,6 +24,7 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -35,15 +38,22 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.mother.app.data.local.entity.HabitEntity
 import com.mother.app.data.model.Theme
+import com.mother.app.data.timer.ActiveTimerStore
+import com.mother.app.data.timer.TimerService
 import com.mother.app.ui.dashboard.DashboardScreen
 import com.mother.app.ui.dashboard.DashboardViewModel
+import com.mother.app.ui.focus.FocusModeScreen
+import com.mother.app.ui.focus.FocusModeViewModel
 import com.mother.app.ui.navigation.Routes
 import com.mother.app.ui.navigation.TopLevelDestination
 import com.mother.app.ui.screens.CreateHabitScreen
 import com.mother.app.ui.screens.CreateScheduleScreen
 import com.mother.app.ui.screens.CreateStudySessionScreen
 import com.mother.app.ui.screens.CreateTaskScreen
+import com.mother.app.ui.pomodoro.PomodoroScreen
+import com.mother.app.ui.pomodoro.PomodoroViewModel
 import com.mother.app.ui.progress.ProgressScreen
 import com.mother.app.ui.screens.HabitListViewModel
 import com.mother.app.ui.screens.PlaceholderScreen
@@ -74,6 +84,14 @@ class MainActivity : ComponentActivity() {
 
     private val studySessionListViewModel: StudySessionListViewModel by viewModels {
         StudySessionListViewModel.factory((application as MotherApplication).container)
+    }
+
+    private val focusModeViewModel: FocusModeViewModel by viewModels {
+        FocusModeViewModel.factory((application as MotherApplication).container)
+    }
+
+    private val pomodoroViewModel: PomodoroViewModel by viewModels {
+        PomodoroViewModel.factory((application as MotherApplication).container)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -107,10 +125,41 @@ class MainActivity : ComponentActivity() {
         val backStackEntry by navController.currentBackStackEntryAsState()
         val currentRoute = backStackEntry?.destination?.route
         val isTopLevel = TopLevelDestination.entries.any { it.route == currentRoute }
+        // Focus Mode hides the bottom navigation entirely (PRD §18).
+        val isFocusMode = currentRoute == Routes.FOCUS
         var showQuickAdd by rememberSaveable { mutableStateOf(false) }
+        var showTimerBusyDialog by rememberSaveable { mutableStateOf(false) }
+
+        /**
+         * Starts the single timer for [habit] and enters Focus Mode (PRD §16/§18).
+         * Refuses when another timer is still running (PRD §12).
+         */
+        val startTimer: (HabitEntity) -> Unit = { habit ->
+            if (ActiveTimerStore.activeTimer.value != null) {
+                showTimerBusyDialog = true
+            } else {
+                ActiveTimerStore.start(habit.id, habit.title, habit.targetMinute)
+                TimerService.start(this@MainActivity)
+                navController.navigate(Routes.FOCUS)
+            }
+        }
+
+        /** Opens Focus Mode when a timer runs; otherwise points to the habit list. */
+        val openTimerOrStart: () -> Unit = {
+            if (ActiveTimerStore.activeTimer.value != null) {
+                navController.navigate(Routes.FOCUS)
+            } else {
+                navController.navigate(TopLevelDestination.Progress.route) {
+                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            }
+        }
 
         Scaffold(
             bottomBar = {
+                if (!isFocusMode) {
                 NavigationBar {
                     TopLevelDestination.entries.forEach { destination ->
                         val selected = currentRoute == destination.route
@@ -130,10 +179,11 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                 }
+                }
             },
             // Global FAB (UI_SPEC): shown on top-level screens, opens the quick-add sheet.
             floatingActionButton = {
-                if (isTopLevel) {
+                if (isTopLevel && !isFocusMode) {
                     FloatingActionButton(onClick = { showQuickAdd = true }) {
                         Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.quick_add))
                     }
@@ -146,7 +196,7 @@ class MainActivity : ComponentActivity() {
                 modifier = Modifier.padding(innerPadding)
             ) {
                 composable(TopLevelDestination.Dashboard.route) {
-                    DashboardScreen(viewModel = dashboardViewModel)
+                    DashboardScreen(viewModel = dashboardViewModel, onStartTimer = openTimerOrStart)
                 }
                 composable(TopLevelDestination.Calendar.route) {
                     ScheduleListScreen(viewModel = scheduleListViewModel)
@@ -160,7 +210,8 @@ class MainActivity : ComponentActivity() {
                         studySessionListViewModel = studySessionListViewModel,
                         onEditSession = { sessionId ->
                             navController.navigate(Routes.editSession(sessionId))
-                        }
+                        },
+                        onStartTimer = startTimer
                     )
                 }
                 composable(TopLevelDestination.Settings.route) {
@@ -202,6 +253,26 @@ class MainActivity : ComponentActivity() {
                         onCancelled = { navController.popBackStack() }
                     )
                 }
+                composable(Routes.POMODORO) {
+                    PomodoroScreen(
+                        viewModel = pomodoroViewModel,
+                        onBack = { navController.popBackStack() }
+                    )
+                }
+                composable(Routes.FOCUS) {
+                    FocusModeScreen(
+                        viewModel = focusModeViewModel,
+                        onExit = { navController.popBackStack() },
+                        onGoToHabits = {
+                            navController.popBackStack()
+                            navController.navigate(TopLevelDestination.Progress.route) {
+                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        }
+                    )
+                }
             }
         }
 
@@ -211,6 +282,19 @@ class MainActivity : ComponentActivity() {
                 onPick = { route ->
                     showQuickAdd = false
                     navController.navigate(route)
+                }
+            )
+        }
+
+        if (showTimerBusyDialog) {
+            AlertDialog(
+                onDismissRequest = { showTimerBusyDialog = false },
+                title = { Text(stringResource(R.string.timer_busy_title)) },
+                text = { Text(stringResource(R.string.timer_busy_message)) },
+                confirmButton = {
+                    TextButton(onClick = { showTimerBusyDialog = false }) {
+                        Text(stringResource(android.R.string.ok))
+                    }
                 }
             )
         }
@@ -224,6 +308,7 @@ class MainActivity : ComponentActivity() {
             QuickAddRow(Icons.Filled.AddTask, R.string.quick_add_task) { onPick(Routes.CREATE_TASK) }
             QuickAddRow(Icons.Filled.Repeat, R.string.quick_add_habit) { onPick(Routes.CREATE_HABIT) }
             QuickAddRow(Icons.Filled.School, R.string.quick_add_session) { onPick(Routes.CREATE_SESSION) }
+            QuickAddRow(Icons.Filled.Timer, R.string.quick_add_pomodoro) { onPick(Routes.POMODORO) }
         }
     }
 

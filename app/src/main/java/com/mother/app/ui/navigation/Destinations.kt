@@ -31,6 +31,8 @@ object Routes {
     const val SESSIONS = "sessions"
     const val CREATE_SESSION = "session/create"
     const val EDIT_SESSION = "session/edit/{sessionId}"
+    const val FOCUS = "focus"
+    const val POMODORO = "pomodoro"
 
     fun editSession(sessionId: String): String = "session/edit/$sessionId"
 }

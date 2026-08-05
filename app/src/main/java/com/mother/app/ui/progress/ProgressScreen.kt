@@ -26,7 +26,8 @@ import com.mother.app.ui.screens.StudySessionListViewModel
 fun ProgressScreen(
     habitListViewModel: HabitListViewModel,
     studySessionListViewModel: StudySessionListViewModel,
-    onEditSession: (String) -> Unit
+    onEditSession: (String) -> Unit,
+    onStartTimer: ((com.mother.app.data.local.entity.HabitEntity) -> Unit)? = null
 ) {
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
 
@@ -44,7 +45,7 @@ fun ProgressScreen(
             )
         }
         when (selectedTab) {
-            0 -> HabitListScreen(viewModel = habitListViewModel)
+            0 -> HabitListScreen(viewModel = habitListViewModel, onStartTimer = onStartTimer)
             else -> StudySessionListScreen(
                 viewModel = studySessionListViewModel,
                 onEditSession = onEditSession

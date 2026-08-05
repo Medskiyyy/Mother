@@ -39,18 +39,18 @@ import com.mother.app.ui.components.LoadingState
 import com.mother.app.util.TimeUtils
 
 @Composable
-fun DashboardScreen(viewModel: DashboardViewModel) {
+fun DashboardScreen(viewModel: DashboardViewModel, onStartTimer: () -> Unit) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     when {
         state.isLoading -> LoadingState()
         state.error != null -> ErrorState(description = state.error!!, onRetry = { viewModel.refresh() })
-        else -> DashboardContent(state)
+        else -> DashboardContent(state, onStartTimer)
     }
 }
 
 @Composable
-private fun DashboardContent(state: DashboardUiState) {
+private fun DashboardContent(state: DashboardUiState, onStartTimer: () -> Unit) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
@@ -66,7 +66,7 @@ private fun DashboardContent(state: DashboardUiState) {
             TargetCard(state.todayStudyMinutes, state.dailyTargetMinutes)
         }
         item {
-            NextActivityCard(state.nextActivity)
+            NextActivityCard(state.nextActivity, onStartTimer)
         }
         item {
             SectionTitle(stringResource(R.string.dashboard_deadlines))
@@ -93,7 +93,7 @@ private fun DashboardContent(state: DashboardUiState) {
             }
         }
         item {
-            QuickActions()
+            QuickActions(onStartTimer)
         }
     }
 }
@@ -163,7 +163,7 @@ private fun TargetCard(currentMinutes: Int, targetMinutes: Int) {
 }
 
 @Composable
-private fun NextActivityCard(schedule: ScheduleEntity?) {
+private fun NextActivityCard(schedule: ScheduleEntity?, onStartTimer: () -> Unit) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
@@ -193,7 +193,7 @@ private fun NextActivityCard(schedule: ScheduleEntity?) {
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    OutlinedButton(onClick = { /* start timer */ }) {
+                    OutlinedButton(onClick = onStartTimer) {
                         Icon(Icons.Filled.PlayCircle, contentDescription = null)
                         Spacer(Modifier.size(4.dp))
                         Text(stringResource(R.string.dashboard_start))
@@ -288,7 +288,7 @@ private fun ScheduleRow(schedule: ScheduleEntity) {
 }
 
 @Composable
-private fun QuickActions() {
+private fun QuickActions(onStartTimer: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -308,14 +308,15 @@ private fun QuickActions() {
         QuickActionButton(
             stringResource(R.string.dashboard_quick_start_timer),
             Icons.Filled.Timer,
-            Modifier.weight(1f)
+            Modifier.weight(1f),
+            onClick = onStartTimer
         )
     }
 }
 
 @Composable
-private fun QuickActionButton(label: String, icon: ImageVector, modifier: Modifier = Modifier) {
-    OutlinedButton(onClick = { /* TODO */ }, modifier = modifier) {
+private fun QuickActionButton(label: String, icon: ImageVector, modifier: Modifier = Modifier, onClick: () -> Unit = {}) {
+    OutlinedButton(onClick = onClick, modifier = modifier) {
         Icon(icon, contentDescription = null)
         Spacer(Modifier.size(4.dp))
         Text(label)
