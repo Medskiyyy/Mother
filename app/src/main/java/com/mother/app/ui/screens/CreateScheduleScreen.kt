@@ -42,9 +42,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mother.app.R
 import com.mother.app.data.local.entity.CategoryEntity
 import com.mother.app.data.local.entity.ScheduleEntity
+import com.mother.app.data.local.entity.ScheduleReminderEntity
 import com.mother.app.data.model.Priority
 import com.mother.app.data.model.RepeatType
 import com.mother.app.data.model.StatusSchedule
+import com.mother.app.data.reminder.ReminderScheduler
 import com.mother.app.data.repository.CategoryRepository
 import com.mother.app.data.repository.ScheduleRepository
 import com.mother.app.di.AppContainer
@@ -72,13 +74,16 @@ data class CreateScheduleUiState(
     val titleError: Boolean = false,
     val categoryError: Boolean = false,
     val timeError: String? = null,
+    val reminderOffsets: Set<Int> = emptySet(),
     val saving: Boolean = false,
     val errorMessage: String? = null
 )
 
 class CreateScheduleViewModel(
+    private val context: android.content.Context,
     private val scheduleRepository: ScheduleRepository,
     private val categoryRepository: CategoryRepository,
+    private val reminderRepository: com.mother.app.data.repository.ReminderRepository,
     private val onSaved: () -> Unit
 ) : ViewModel() {
 
@@ -113,6 +118,12 @@ class CreateScheduleViewModel(
 
     fun selectCategory(category: CategoryEntity) =
         _uiState.update { it.copy(categoryId = category.id, showCategoryPicker = false, categoryError = false) }
+
+    fun toggleReminderOffset(offset: Int) = _uiState.update { state ->
+        val offsets = state.reminderOffsets.toMutableSet()
+        if (!offsets.add(offset)) offsets.remove(offset)
+        state.copy(reminderOffsets = offsets)
+    }
 
     private fun startTimeOf(state: CreateScheduleUiState): Long =
         atLocalTime(state.date, state.startHour, state.startMinute)
@@ -177,9 +188,10 @@ class CreateScheduleViewModel(
     private suspend fun upsertSchedule(start: Long, end: Long) {
         val state = _uiState.value
         val now = System.currentTimeMillis()
+        val scheduleId = UUID.randomUUID().toString()
         scheduleRepository.upsert(
             ScheduleEntity(
-                id = UUID.randomUUID().toString(),
+                id = scheduleId,
                 title = state.title.trim(),
                 description = null,
                 categoryId = state.categoryId!!,
@@ -195,6 +207,29 @@ class CreateScheduleViewModel(
                 updatedAt = now
             )
         )
+        // Reminders are anchored to the start time; offsets are minutes before.
+        state.reminderOffsets.forEach { offset ->
+            val triggerTime = start - offset * 60_000L
+            if (triggerTime > now) {
+                val reminderId = UUID.randomUUID().toString()
+                reminderRepository.upsertScheduleReminder(
+                    ScheduleReminderEntity(
+                        id = reminderId,
+                        scheduleId = scheduleId,
+                        triggerTime = triggerTime,
+                        snoozeMinute = 0,
+                        enabled = true
+                    )
+                )
+                ReminderScheduler.schedule(
+                    context,
+                    ReminderScheduler.OWNER_SCHEDULE,
+                    scheduleId,
+                    reminderId,
+                    triggerTime
+                )
+            }
+        }
         onSaved()
     }
 
@@ -208,8 +243,15 @@ fun CreateScheduleScreen(
     onSaved: () -> Unit,
     onCancelled: () -> Unit
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     val viewModel: CreateScheduleViewModel = viewModel {
-        CreateScheduleViewModel(container.scheduleRepository, container.categoryRepository, onSaved)
+        CreateScheduleViewModel(
+            context.applicationContext,
+            container.scheduleRepository,
+            container.categoryRepository,
+            container.reminderRepository,
+            onSaved
+        )
     }
     val state by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -299,6 +341,10 @@ fun CreateScheduleScreen(
                 selectedId = state.categoryId,
                 isError = state.categoryError,
                 onOpenPicker = viewModel::openCategoryPicker
+            )
+            ReminderSelector(
+                selectedOffsets = state.reminderOffsets,
+                onToggleOffset = viewModel::toggleReminderOffset
             )
             Spacer(Modifier.height(4.dp))
             Button(

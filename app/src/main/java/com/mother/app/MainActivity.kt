@@ -1,8 +1,12 @@
 package com.mother.app
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -94,10 +98,45 @@ class MainActivity : ComponentActivity() {
         PomodoroViewModel.factory((application as MotherApplication).container)
     }
 
+    /** Requests POST_NOTIFICATIONS once, on first run (PRD §27). */
+    private val notificationPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            showNotificationDeniedInfo = !granted
+        }
+
+    private var showNotificationDeniedInfo by mutableStateOf(false)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        requestNotificationPermissionIfNeeded()
         setContent {
             MotherApp()
+            NotificationDeniedDialog()
+        }
+    }
+
+    private fun requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+
+    /** Reminders cannot ring without the notification permission (UI_SPEC §27). */
+    @Composable
+    private fun NotificationDeniedDialog() {
+        if (showNotificationDeniedInfo) {
+            AlertDialog(
+                onDismissRequest = { showNotificationDeniedInfo = false },
+                title = { Text(stringResource(R.string.reminder_channel_name)) },
+                text = { Text(stringResource(R.string.permission_notification_denied)) },
+                confirmButton = {
+                    TextButton(onClick = { showNotificationDeniedInfo = false }) {
+                        Text(stringResource(android.R.string.ok))
+                    }
+                }
+            )
         }
     }
 

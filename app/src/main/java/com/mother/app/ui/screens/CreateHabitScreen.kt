@@ -1,7 +1,9 @@
 package com.mother.app.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,11 +21,13 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -32,6 +36,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
@@ -42,10 +47,13 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mother.app.R
 import com.mother.app.data.local.entity.CategoryEntity
 import com.mother.app.data.local.entity.HabitEntity
+import com.mother.app.data.local.entity.HabitReminderEntity
 import com.mother.app.data.model.RepeatType
+import com.mother.app.data.reminder.ReminderScheduler
 import com.mother.app.data.repository.CategoryRepository
 import com.mother.app.data.repository.HabitRepository
 import com.mother.app.di.AppContainer
+import com.mother.app.util.TimeUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -59,6 +67,9 @@ data class CreateHabitUiState(
     val categoryId: String? = null,
     val categories: List<CategoryEntity> = emptyList(),
     val showCategoryPicker: Boolean = false,
+    /** Null means the habit has no reminder. */
+    val reminderHour: Int? = null,
+    val reminderMinute: Int = 0,
     val titleError: Boolean = false,
     val targetError: Boolean = false,
     val categoryError: Boolean = false,
@@ -67,8 +78,10 @@ data class CreateHabitUiState(
 )
 
 class CreateHabitViewModel(
+    private val context: android.content.Context,
     private val habitRepository: HabitRepository,
     private val categoryRepository: CategoryRepository,
+    private val reminderRepository: com.mother.app.data.repository.ReminderRepository,
     private val onSaved: () -> Unit
 ) : ViewModel() {
 
@@ -99,6 +112,10 @@ class CreateHabitViewModel(
     fun selectCategory(category: CategoryEntity) =
         _uiState.update { it.copy(categoryId = category.id, showCategoryPicker = false, categoryError = false) }
 
+    /** Sets the daily reminder time; pass hour=null to remove the reminder. */
+    fun onReminderChange(hour: Int?, minute: Int) =
+        _uiState.update { it.copy(reminderHour = hour, reminderMinute = minute) }
+
     fun save() {
         val state = _uiState.value
         val target = state.targetMinute.toIntOrNull() ?: 0
@@ -116,15 +133,17 @@ class CreateHabitViewModel(
         viewModelScope.launch {
             try {
                 val now = System.currentTimeMillis()
+                val habitId = UUID.randomUUID().toString()
+                val reminderHour = state.reminderHour
                 habitRepository.upsert(
                     HabitEntity(
-                        id = UUID.randomUUID().toString(),
+                        id = habitId,
                         categoryId = category.id,
                         title = state.title.trim(),
                         targetMinute = target,
                         repeatType = state.repeatType,
                         customRepeatRule = null,
-                        reminderEnabled = false,
+                        reminderEnabled = reminderHour != null,
                         color = category.color,
                         icon = category.icon,
                         note = null,
@@ -133,6 +152,27 @@ class CreateHabitViewModel(
                         updatedAt = now
                     )
                 )
+                // Habit reminders ring daily at the chosen wall-clock time.
+                if (reminderHour != null) {
+                    val reminderId = UUID.randomUUID().toString()
+                    val triggerTime = TimeUtils.atLocalTime(now, reminderHour, state.reminderMinute)
+                    reminderRepository.upsertHabitReminder(
+                        HabitReminderEntity(
+                            id = reminderId,
+                            habitId = habitId,
+                            triggerTime = triggerTime,
+                            snoozeMinute = 0,
+                            enabled = true
+                        )
+                    )
+                    ReminderScheduler.scheduleRepeating(
+                        context,
+                        ReminderScheduler.OWNER_HABIT,
+                        habitId,
+                        reminderId,
+                        triggerTime
+                    )
+                }
                 onSaved()
             } catch (e: Exception) {
                 _uiState.update { it.copy(saving = false, errorMessage = e.message) }
@@ -150,8 +190,15 @@ fun CreateHabitScreen(
     onSaved: () -> Unit,
     onCancelled: () -> Unit
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     val viewModel: CreateHabitViewModel = viewModel {
-        CreateHabitViewModel(container.habitRepository, container.categoryRepository, onSaved)
+        CreateHabitViewModel(
+            context.applicationContext,
+            container.habitRepository,
+            container.categoryRepository,
+            container.reminderRepository,
+            onSaved
+        )
     }
     val state by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -217,6 +264,12 @@ fun CreateHabitScreen(
                 isError = state.categoryError,
                 onOpenPicker = viewModel::openCategoryPicker
             )
+            HabitReminderRow(
+                hour = state.reminderHour,
+                minute = state.reminderMinute,
+                onPicked = { hour, minute -> viewModel.onReminderChange(hour, minute) },
+                onCleared = { viewModel.onReminderChange(null, 0) }
+            )
             Spacer(Modifier.height(4.dp))
             Button(
                 onClick = viewModel::save,
@@ -233,6 +286,55 @@ fun CreateHabitScreen(
             categories = state.categories,
             onSelected = viewModel::selectCategory,
             onDismiss = viewModel::closeCategoryPicker
+        )
+    }
+}
+
+/**
+ * Daily reminder time for a habit (PRD §14). Tap to pick; the "remove" action
+ * clears it (reminderEnabled = false).
+ */
+@Composable
+private fun HabitReminderRow(
+    hour: Int?,
+    minute: Int,
+    onPicked: (Int, Int) -> Unit,
+    onCleared: () -> Unit
+) {
+    var showPicker by remember { mutableStateOf(false) }
+    val label = if (hour == null) {
+        stringResource(R.string.reminder_none)
+    } else {
+        "%02d:%02d".format(hour, minute)
+    }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { showPicker = true }
+            .padding(vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column {
+            Text(stringResource(R.string.field_reminder), style = MaterialTheme.typography.labelMedium)
+            Text(label, style = MaterialTheme.typography.bodyLarge)
+        }
+        if (hour != null) {
+            TextButton(onClick = onCleared) {
+                Text(stringResource(R.string.form_cancel))
+            }
+        }
+    }
+    if (showPicker) {
+        TimePickerDialog(
+            title = stringResource(R.string.field_pick_time),
+            initialHour = hour ?: 20,
+            initialMinute = if (hour == null) 0 else minute,
+            onDismiss = { showPicker = false },
+            onConfirm = { pickedHour, pickedMinute ->
+                showPicker = false
+                onPicked(pickedHour, pickedMinute)
+            }
         )
     }
 }

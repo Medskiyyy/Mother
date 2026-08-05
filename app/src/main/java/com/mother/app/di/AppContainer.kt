@@ -6,6 +6,8 @@ import com.mother.app.data.repository.CategoryRepository
 import com.mother.app.data.repository.CategoryRepositoryImpl
 import com.mother.app.data.repository.HabitRepository
 import com.mother.app.data.repository.HabitRepositoryImpl
+import com.mother.app.data.repository.ReminderRepository
+import com.mother.app.data.repository.ReminderRepositoryImpl
 import com.mother.app.data.repository.RestoreStreakRepository
 import com.mother.app.data.repository.RestoreStreakRepositoryImpl
 import com.mother.app.data.repository.ScheduleRepository
@@ -44,4 +46,11 @@ class AppContainer(context: Context) {
     val habitRepository: HabitRepository by lazy { HabitRepositoryImpl(database.habitDao()) }
     val studySessionRepository: StudySessionRepository by lazy { StudySessionRepositoryImpl(database.studySessionDao()) }
     val restoreStreakRepository: RestoreStreakRepository by lazy { RestoreStreakRepositoryImpl(database.restoreHistoryDao()) }
+    val reminderRepository: ReminderRepository by lazy {
+        ReminderRepositoryImpl(
+            taskReminderDao = database.taskReminderDao(),
+            scheduleReminderDao = database.scheduleReminderDao(),
+            habitReminderDao = database.habitReminderDao()
+        )
+    }
 }

@@ -47,8 +47,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mother.app.R
 import com.mother.app.data.local.entity.CategoryEntity
 import com.mother.app.data.local.entity.TaskEntity
+import com.mother.app.data.local.entity.TaskReminderEntity
 import com.mother.app.data.model.Priority
 import com.mother.app.data.model.StatusTask
+import com.mother.app.data.reminder.ReminderScheduler
 import com.mother.app.data.repository.CategoryRepository
 import com.mother.app.data.repository.TaskRepository
 import com.mother.app.di.AppContainer
@@ -69,13 +71,16 @@ data class CreateTaskUiState(
     val showCategoryPicker: Boolean = false,
     val titleError: Boolean = false,
     val categoryError: Boolean = false,
+    val reminderOffsets: Set<Int> = emptySet(),
     val saving: Boolean = false,
     val errorMessage: String? = null
 )
 
 class CreateTaskViewModel(
+    private val context: android.content.Context,
     private val taskRepository: TaskRepository,
     private val categoryRepository: CategoryRepository,
+    private val reminderRepository: com.mother.app.data.repository.ReminderRepository,
     private val onSaved: () -> Unit
 ) : ViewModel() {
 
@@ -108,6 +113,12 @@ class CreateTaskViewModel(
 
     fun onDeadlineChange(value: Long?) = _uiState.update { it.copy(deadline = value) }
 
+    fun toggleReminderOffset(offset: Int) = _uiState.update { state ->
+        val offsets = state.reminderOffsets.toMutableSet()
+        if (!offsets.add(offset)) offsets.remove(offset)
+        state.copy(reminderOffsets = offsets)
+    }
+
     fun save() {
         val state = _uiState.value
         val titleBlank = state.title.isBlank()
@@ -120,9 +131,10 @@ class CreateTaskViewModel(
         viewModelScope.launch {
             try {
                 val now = System.currentTimeMillis()
+                val taskId = UUID.randomUUID().toString()
                 taskRepository.upsert(
                     TaskEntity(
-                        id = UUID.randomUUID().toString(),
+                        id = taskId,
                         title = state.title.trim(),
                         description = state.description.trim().ifBlank { null },
                         categoryId = state.categoryId!!,
@@ -135,6 +147,32 @@ class CreateTaskViewModel(
                         updatedAt = now
                     )
                 )
+                // Task reminders anchor to the deadline (PRD §13).
+                val deadline = state.deadline
+                if (deadline != null) {
+                    state.reminderOffsets.forEach { offset ->
+                        val triggerTime = deadline - offset * 60_000L
+                        if (triggerTime > now) {
+                            val reminderId = UUID.randomUUID().toString()
+                            reminderRepository.upsertTaskReminder(
+                                TaskReminderEntity(
+                                    id = reminderId,
+                                    taskId = taskId,
+                                    triggerTime = triggerTime,
+                                    snoozeMinute = 0,
+                                    enabled = true
+                                )
+                            )
+                            ReminderScheduler.schedule(
+                                context,
+                                ReminderScheduler.OWNER_TASK,
+                                taskId,
+                                reminderId,
+                                triggerTime
+                            )
+                        }
+                    }
+                }
                 onSaved()
             } catch (e: Exception) {
                 _uiState.update { it.copy(saving = false, errorMessage = e.message) }
@@ -152,8 +190,15 @@ fun CreateTaskScreen(
     onSaved: () -> Unit,
     onCancelled: () -> Unit
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     val viewModel: CreateTaskViewModel = viewModel {
-        CreateTaskViewModel(container.taskRepository, container.categoryRepository, onSaved)
+        CreateTaskViewModel(
+            context.applicationContext,
+            container.taskRepository,
+            container.categoryRepository,
+            container.reminderRepository,
+            onSaved
+        )
     }
     val state by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -219,6 +264,13 @@ fun CreateTaskScreen(
                 isError = state.categoryError,
                 onOpenPicker = viewModel::openCategoryPicker
             )
+            // Reminders need a deadline to anchor to (PRD §13).
+            if (state.deadline != null) {
+                ReminderSelector(
+                    selectedOffsets = state.reminderOffsets,
+                    onToggleOffset = viewModel::toggleReminderOffset
+                )
+            }
             Spacer(Modifier.height(4.dp))
             Button(
                 onClick = viewModel::save,
