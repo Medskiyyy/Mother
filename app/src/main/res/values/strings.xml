@@ -43,4 +43,77 @@
     <string name="quick_add_task">Tambah Tugas</string>
     <string name="quick_add_habit">Tambah Kebiasaan</string>
     <string name="quick_add_session">Tambah Sesi Manual</string>
+
+    <!-- Forms -->
+    <string name="create_task_title">Tambah Tugas</string>
+    <string name="create_schedule_title">Tambah Jadwal</string>
+    <string name="create_habit_title">Tambah Kebiasaan</string>
+    <string name="form_save">Simpan</string>
+    <string name="form_cancel">Batal</string>
+    <string name="field_title">Judul</string>
+    <string name="field_description">Deskripsi</string>
+    <string name="field_priority">Prioritas</string>
+    <string name="field_deadline">Deadline</string>
+    <string name="field_category">Kategori</string>
+    <string name="field_date">Tanggal</string>
+    <string name="field_start_time">Jam Mulai</string>
+    <string name="field_end_time">Jam Selesai</string>
+    <string name="field_target_minutes">Target (menit)</string>
+    <string name="field_repeat">Pengulangan</string>
+    <string name="field_not_selected">Belum dipilih</string>
+    <string name="field_pick_time">Pilih jam</string>
+
+    <!-- Validation -->
+    <string name="error_title_required">Judul wajib diisi.</string>
+    <string name="error_category_required">Pilih kategori terlebih dahulu.</string>
+    <string name="error_time_order">Jam selesai harus lebih besar dari jam mulai.</string>
+    <string name="error_time_required">Pilih jam mulai dan jam selesai.</string>
+    <string name="error_target_positive">Target harus lebih dari nol.</string>
+    <string name="error_save_failed">Gagal menyimpan. Coba lagi.</string>
+
+    <!-- Dialogs -->
+    <string name="dialog_conflict_title">Jadwal Bertabrakan</string>
+    <string name="dialog_conflict_message">Jadwal bertabrakan dengan jadwal lain. Lanjutkan?</string>
+    <string name="dialog_yes">Ya</string>
+    <string name="dialog_no">Tidak</string>
+    <string name="dialog_pick">Pilih</string>
+
+    <!-- Priority -->
+    <string name="priority_aman">Aman</string>
+    <string name="priority_waspada">Waspada</string>
+    <string name="priority_mepet">Mepet</string>
+    <string name="priority_urgent">Urgent</string>
+
+    <!-- Repeat -->
+    <string name="repeat_none">Tidak berulang</string>
+    <string name="repeat_daily">Harian</string>
+    <string name="repeat_weekly">Mingguan</string>
+    <string name="repeat_monthly">Bulanan</string>
+    <string name="repeat_custom">Custom</string>
+
+    <!-- Category picker -->
+    <string name="category_picker_title">Pilih Kategori</string>
+    <string name="category_picker_empty">Belum ada kategori.</string>
+
+    <!-- Lists -->
+    <string name="tasks_tab_active">Aktif</string>
+    <string name="tasks_tab_completed">Selesai</string>
+    <string name="tasks_empty_title">Belum ada tugas</string>
+    <string name="tasks_empty_description">Tambahkan tugas baru melalui tombol tambah.</string>
+    <string name="tasks_completed_empty_title">Belum ada tugas selesai</string>
+    <string name="tasks_completed_empty_description">Tugas yang diselesaikan akan muncul di sini.</string>
+    <string name="action_complete">Selesaikan</string>
+    <string name="action_delete">Hapus</string>
+    <string name="action_undo">Urungkan</string>
+    <string name="undo_complete_message">Tugas diselesaikan.</string>
+    <string name="undo_delete_message">Tugas dihapus.</string>
+    <string name="schedules_empty_title">Belum ada jadwal</string>
+    <string name="schedules_empty_description">Tambahkan jadwal baru melalui tombol tambah.</string>
+    <string name="habits_empty_title">Belum ada kebiasaan</string>
+    <string name="habits_empty_description">Tambahkan kebiasaan baru melalui tombol tambah.</string>
+    <string name="status_label_upcoming">Belum Dimulai</string>
+    <string name="status_label_running">Sedang Berjalan</string>
+    <string name="status_label_completed">Selesai</string>
+    <string name="status_label_missed">Terlewat</string>
+    <string name="status_label_cancelled">Dibatalkan</string>
 </resources>

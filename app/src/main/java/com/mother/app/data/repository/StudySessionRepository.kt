@@ -27,6 +27,16 @@ class StudySessionRepositoryImpl(private val dao: StudySessionDao) : StudySessio
 
     override fun observeAllAsc(): Flow<List<StudySessionEntity>> = dao.observeAllAsc()
     override suspend fun getById(id: String): StudySessionEntity? = dao.getById(id)
-    override suspend fun upsert(session: StudySessionEntity) = dao.upsert(session)
+
+    override suspend fun upsert(session: StudySessionEntity) {
+        if (session.durationMinute <= 0) {
+            throw ValidationException(
+                ValidationException.Code.NON_POSITIVE_DURATION,
+                "Durasi harus lebih dari nol."
+            )
+        }
+        dao.upsert(session)
+    }
+
     override suspend fun deleteById(id: String) = dao.deleteById(id)
 }

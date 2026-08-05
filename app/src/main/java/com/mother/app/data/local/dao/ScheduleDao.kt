@@ -16,6 +16,15 @@ interface ScheduleDao {
     @Query("SELECT * FROM schedule WHERE startTime >= :from AND startTime < :to ORDER BY startTime ASC")
     fun observeRange(from: Long, to: Long): Flow<List<ScheduleEntity>>
 
+    @Query("SELECT COUNT(*) FROM schedule WHERE startTime < :end AND endTime > :start AND id != :excludeId")
+    suspend fun countOverlapping(start: Long, end: Long, excludeId: String): Int
+
+    @Query("SELECT COUNT(*) FROM schedule WHERE categoryId = :categoryId")
+    suspend fun countByCategory(categoryId: String): Int
+
+    @Query("SELECT * FROM schedule ORDER BY startTime ASC")
+    fun observeAll(): Flow<List<ScheduleEntity>>
+
     @Query("SELECT * FROM schedule WHERE id = :id")
     suspend fun getById(id: String): ScheduleEntity?
 

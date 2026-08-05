@@ -22,3 +22,10 @@ enum class TopLevelDestination(
     Progress("progress", R.string.nav_progress, Icons.Filled.Insights),
     Settings("settings", R.string.nav_settings, Icons.Filled.Settings)
 }
+
+/** Secondary routes reachable from the FAB and list screens. */
+object Routes {
+    const val CREATE_TASK = "task/create"
+    const val CREATE_SCHEDULE = "schedule/create"
+    const val CREATE_HABIT = "habit/create"
+}

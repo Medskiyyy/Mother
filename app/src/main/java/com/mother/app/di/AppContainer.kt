@@ -26,7 +26,14 @@ class AppContainer(context: Context) {
         AppDatabase.build(context.applicationContext)
     }
 
-    val categoryRepository: CategoryRepository by lazy { CategoryRepositoryImpl(database.categoryDao()) }
+    val categoryRepository: CategoryRepository by lazy {
+        CategoryRepositoryImpl(
+            dao = database.categoryDao(),
+            taskDao = database.taskDao(),
+            scheduleDao = database.scheduleDao(),
+            habitDao = database.habitDao()
+        )
+    }
     val settingRepository: SettingRepository by lazy { SettingRepositoryImpl(database.settingDao()) }
     val scheduleRepository: ScheduleRepository by lazy { ScheduleRepositoryImpl(database.scheduleDao()) }
     val taskRepository: TaskRepository by lazy { TaskRepositoryImpl(database.taskDao()) }

@@ -13,6 +13,12 @@ interface HabitDao {
     @Query("SELECT * FROM habit WHERE archived = 0 ORDER BY title ASC")
     fun observeActive(): Flow<List<HabitEntity>>
 
+    @Query("SELECT COUNT(*) FROM habit WHERE categoryId = :categoryId")
+    suspend fun countByCategory(categoryId: String): Int
+
+    @Query("UPDATE habit SET archived = :archived, updatedAt = :updatedAt WHERE id = :id")
+    suspend fun updateArchived(id: String, archived: Boolean, updatedAt: Long)
+
     @Query("SELECT * FROM habit WHERE id = :id")
     suspend fun getById(id: String): HabitEntity?
 
