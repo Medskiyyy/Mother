@@ -21,4 +21,10 @@ interface SettingDao {
 
     @Query("UPDATE app_setting SET theme = :theme WHERE id = 1")
     suspend fun updateTheme(theme: String)
+
+    @Query("UPDATE app_setting SET lastBackup = :lastBackup WHERE id = 1")
+    suspend fun updateLastBackup(lastBackup: Long)
+
+    @Query("UPDATE app_setting SET onboardingFinished = :finished WHERE id = 1")
+    suspend fun updateOnboardingFinished(finished: Boolean)
 }

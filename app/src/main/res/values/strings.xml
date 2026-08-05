@@ -236,4 +236,45 @@
     <string name="calendar_prev_month">Bulan sebelumnya</string>
     <string name="calendar_next_month">Bulan berikutnya</string>
     <string name="calendar_today">Hari Ini</string>
+
+    <!-- Settings -->
+    <string name="settings_appearance">Tampilan</string>
+    <string name="settings_backup">Cadangan &amp; Pulihkan</string>
+    <string name="settings_about">Tentang</string>
+    <string name="theme_light">Terang</string>
+    <string name="theme_dark">Gelap</string>
+    <string name="theme_system">Ikuti Sistem</string>
+    <string name="backup_export">Ekspor Data</string>
+    <string name="backup_import">Impor Data</string>
+    <string name="backup_last">Backup terakhir: %1$s</string>
+    <string name="backup_last_never">Belum pernah backup.</string>
+    <string name="backup_export_success">Backup berhasil disimpan.</string>
+    <string name="backup_restore_success">Data berhasil dipulihkan.</string>
+    <string name="backup_restore_title">Pulihkan Data</string>
+    <string name="backup_restore_confirm">Seluruh data saat ini akan diganti dengan data dari file backup. Lanjutkan?</string>
+    <string name="backup_restore_action">Pulihkan</string>
+    <string name="about_version">Versi %1$s</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_title_1">Selamat datang di Mother</string>
+    <string name="onboarding_body_1">Sistem pendamping pribadi yang membantu kamu mengetahui apa yang harus dilakukan hari ini, mengingatkan jadwal, dan menjaga konsistensi.</string>
+    <string name="onboarding_title_2">Fitur Utama</string>
+    <string name="onboarding_body_2">Jadwal, tugas, kebiasaan, dan pelacak belajar terintegrasi dalam satu tempat. Semua data tersimpan offline di perangkatmu.</string>
+    <string name="onboarding_title_3">Pengingat</string>
+    <string name="onboarding_body_3">Pengingat akan memberitahumu sebelum jadwal dan tenggat. Setiap pengingat wajib direspons: Mulai, Tunda, atau Lewati.</string>
+    <string name="onboarding_title_4">Izin</string>
+    <string name="onboarding_body_4">Izinkan notifikasi agar pengingat dapat bekerja. Tanpa izin ini, pengingat tidak akan berbunyi.</string>
+    <string name="onboarding_skip">Lewati</string>
+    <string name="onboarding_next">Lanjut</string>
+    <string name="onboarding_start">Mulai</string>
+    <string name="onboarding_grant">Izinkan Notifikasi</string>
+
+    <!-- Search -->
+    <string name="search_title">Cari</string>
+    <string name="search_hint">Cari tugas, jadwal, kebiasaan, sesi…</string>
+    <string name="search_empty">Data tidak ditemukan.</string>
+    <string name="search_group_tasks">Tugas</string>
+    <string name="search_group_schedules">Jadwal</string>
+    <string name="search_group_habits">Kebiasaan</string>
+    <string name="search_group_sessions">Sesi Belajar</string>
 </resources>

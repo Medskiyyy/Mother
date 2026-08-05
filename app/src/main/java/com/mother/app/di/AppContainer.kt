@@ -56,4 +56,14 @@ class AppContainer(context: Context) {
         )
     }
     val achievementRepository: AchievementRepository by lazy { AchievementRepositoryImpl(database.achievementDao()) }
+
+    /** Flushes WAL pages so a file copy of the database is complete (backup). */
+    suspend fun checkpoint() = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        database.openHelper.writableDatabase.execSQL("PRAGMA wal_checkpoint(FULL)")
+    }
+
+    /** Closes the database so the file can be replaced during restore. */
+    suspend fun closeForRestore() = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        database.openHelper.close()
+    }
 }

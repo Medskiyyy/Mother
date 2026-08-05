@@ -37,6 +37,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -64,9 +66,14 @@ import com.mother.app.ui.progress.AchievementViewModel
 import com.mother.app.ui.progress.HeatmapViewModel
 import com.mother.app.ui.progress.ProgressScreen
 import com.mother.app.ui.progress.StatisticsViewModel
+import com.mother.app.data.backup.BackupManager
+import com.mother.app.ui.onboarding.OnboardingScreen
 import com.mother.app.ui.screens.HabitListViewModel
-import com.mother.app.ui.screens.PlaceholderScreen
 import com.mother.app.ui.screens.StudySessionListViewModel
+import com.mother.app.ui.search.SearchScreen
+import com.mother.app.ui.search.SearchViewModel
+import com.mother.app.ui.settings.SettingsScreen
+import com.mother.app.ui.settings.SettingsViewModel
 import com.mother.app.ui.tasks.TasksScreen
 import com.mother.app.ui.tasks.TasksViewModel
 import com.mother.app.ui.theme.MotherTheme
@@ -111,6 +118,15 @@ class MainActivity : ComponentActivity() {
 
     private val achievementViewModel: AchievementViewModel by viewModels {
         AchievementViewModel.factory((application as MotherApplication).container)
+    }
+
+    private val settingsViewModel: SettingsViewModel by viewModels {
+        val container = (application as MotherApplication).container
+        SettingsViewModel.factory(container, BackupManager(applicationContext, container))
+    }
+
+    private val searchViewModel: SearchViewModel by viewModels {
+        SearchViewModel.factory((application as MotherApplication).container)
     }
 
     /** Requests POST_NOTIFICATIONS once, on first run (PRD §27). */
@@ -166,9 +182,23 @@ class MainActivity : ComponentActivity() {
             Theme.DARK -> true
             else -> systemDark
         }
+        // Show onboarding once, before the main UI (UI_SPEC §Onboarding).
+        val onboardingDone = setting?.onboardingFinished ?: false
+        var finishedThisRun by rememberSaveable { mutableStateOf(false) }
 
         MotherTheme(darkTheme = darkTheme) {
-            MotherContent()
+            if (onboardingDone || finishedThisRun) {
+                MotherContent()
+            } else {
+                OnboardingScreen(
+                    onFinished = {
+                        finishedThisRun = true
+                        lifecycleScope.launch {
+                            container.settingRepository.setOnboardingFinished(true)
+                        }
+                    }
+                )
+            }
         }
     }
 
@@ -250,7 +280,11 @@ class MainActivity : ComponentActivity() {
                 modifier = Modifier.padding(innerPadding)
             ) {
                 composable(TopLevelDestination.Dashboard.route) {
-                    DashboardScreen(viewModel = dashboardViewModel, onStartTimer = openTimerOrStart)
+                    DashboardScreen(
+                        viewModel = dashboardViewModel,
+                        onStartTimer = openTimerOrStart,
+                        onSearch = { navController.navigate(Routes.SEARCH) }
+                    )
                 }
                 composable(TopLevelDestination.Calendar.route) {
                     CalendarScreen(viewModel = calendarViewModel)
@@ -272,7 +306,7 @@ class MainActivity : ComponentActivity() {
                     )
                 }
                 composable(TopLevelDestination.Settings.route) {
-                    PlaceholderScreen(stringResource(TopLevelDestination.Settings.labelRes))
+                    SettingsScreen(viewModel = settingsViewModel)
                 }
                 composable(Routes.CREATE_TASK) {
                     CreateTaskScreen(
@@ -313,6 +347,12 @@ class MainActivity : ComponentActivity() {
                 composable(Routes.POMODORO) {
                     PomodoroScreen(
                         viewModel = pomodoroViewModel,
+                        onBack = { navController.popBackStack() }
+                    )
+                }
+                composable(Routes.SEARCH) {
+                    SearchScreen(
+                        viewModel = searchViewModel,
                         onBack = { navController.popBackStack() }
                     )
                 }

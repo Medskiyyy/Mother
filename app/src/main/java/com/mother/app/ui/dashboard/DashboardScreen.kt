@@ -16,9 +16,11 @@ import androidx.compose.material.icons.automirrored.filled.EventNote
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -39,25 +41,25 @@ import com.mother.app.ui.components.LoadingState
 import com.mother.app.util.TimeUtils
 
 @Composable
-fun DashboardScreen(viewModel: DashboardViewModel, onStartTimer: () -> Unit) {
+fun DashboardScreen(viewModel: DashboardViewModel, onStartTimer: () -> Unit, onSearch: () -> Unit) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     when {
         state.isLoading -> LoadingState()
         state.error != null -> ErrorState(description = state.error!!, onRetry = { viewModel.refresh() })
-        else -> DashboardContent(state, onStartTimer)
+        else -> DashboardContent(state, onStartTimer, onSearch)
     }
 }
 
 @Composable
-private fun DashboardContent(state: DashboardUiState, onStartTimer: () -> Unit) {
+private fun DashboardContent(state: DashboardUiState, onStartTimer: () -> Unit, onSearch: () -> Unit) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
-            Header(state.greeting, state.dateLabel)
+            Header(state.greeting, state.dateLabel, onSearch)
         }
         item {
             StreakCard(state.streak)
@@ -99,19 +101,28 @@ private fun DashboardContent(state: DashboardUiState, onStartTimer: () -> Unit) 
 }
 
 @Composable
-private fun Header(greeting: String, dateLabel: String) {
-    Column {
-        Text(
-            text = greeting,
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.primary
-        )
-        Spacer(Modifier.height(4.dp))
-        Text(
-            text = dateLabel,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+private fun Header(greeting: String, dateLabel: String, onSearch: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = greeting,
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = dateLabel,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        IconButton(onClick = onSearch) {
+            Icon(Icons.Filled.Search, contentDescription = stringResource(R.string.search_title))
+        }
     }
 }
 
