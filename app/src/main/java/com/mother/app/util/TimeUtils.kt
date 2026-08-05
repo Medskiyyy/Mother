@@ -39,6 +39,19 @@ object TimeUtils {
      */
     fun endOfYesterday(now: Long = System.currentTimeMillis()): Long = startOfDay(now)
 
+    /** Start of the (Monday-based) week containing [epochMillis], local zone. */
+    fun startOfWeek(epochMillis: Long): Long =
+        toLocalDate(epochMillis).with(java.time.DayOfWeek.MONDAY)
+            .atStartOfDay(zone).toInstant().toEpochMilli()
+
+    /** Start of the year containing [epochMillis], in the device's local zone. */
+    fun startOfYear(epochMillis: Long): Long =
+        toLocalDate(epochMillis).withDayOfYear(1).atStartOfDay(zone).toInstant().toEpochMilli()
+
+    /** The local start-of-day [days] days after the day containing [epochMillis]. */
+    fun plusDays(epochMillis: Long, days: Long): Long =
+        toLocalDate(epochMillis).plusDays(days).atStartOfDay(zone).toInstant().toEpochMilli()
+
     /** Start of the month containing [epochMillis], in the device's local zone. */
     fun startOfMonth(epochMillis: Long): Long =
         toLocalDate(epochMillis).withDayOfMonth(1).atStartOfDay(zone).toInstant().toEpochMilli()

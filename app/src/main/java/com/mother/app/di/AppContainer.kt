@@ -2,6 +2,8 @@ package com.mother.app.di
 
 import android.content.Context
 import com.mother.app.data.local.AppDatabase
+import com.mother.app.data.repository.AchievementRepository
+import com.mother.app.data.repository.AchievementRepositoryImpl
 import com.mother.app.data.repository.CategoryRepository
 import com.mother.app.data.repository.CategoryRepositoryImpl
 import com.mother.app.data.repository.HabitRepository
@@ -53,4 +55,5 @@ class AppContainer(context: Context) {
             habitReminderDao = database.habitReminderDao()
         )
     }
+    val achievementRepository: AchievementRepository by lazy { AchievementRepositoryImpl(database.achievementDao()) }
 }

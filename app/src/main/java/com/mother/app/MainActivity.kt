@@ -56,13 +56,16 @@ import com.mother.app.ui.screens.CreateHabitScreen
 import com.mother.app.ui.screens.CreateScheduleScreen
 import com.mother.app.ui.screens.CreateStudySessionScreen
 import com.mother.app.ui.screens.CreateTaskScreen
+import com.mother.app.ui.calendar.CalendarScreen
+import com.mother.app.ui.calendar.CalendarViewModel
 import com.mother.app.ui.pomodoro.PomodoroScreen
 import com.mother.app.ui.pomodoro.PomodoroViewModel
+import com.mother.app.ui.progress.AchievementViewModel
+import com.mother.app.ui.progress.HeatmapViewModel
 import com.mother.app.ui.progress.ProgressScreen
+import com.mother.app.ui.progress.StatisticsViewModel
 import com.mother.app.ui.screens.HabitListViewModel
 import com.mother.app.ui.screens.PlaceholderScreen
-import com.mother.app.ui.screens.ScheduleListScreen
-import com.mother.app.ui.screens.ScheduleListViewModel
 import com.mother.app.ui.screens.StudySessionListViewModel
 import com.mother.app.ui.tasks.TasksScreen
 import com.mother.app.ui.tasks.TasksViewModel
@@ -76,10 +79,6 @@ class MainActivity : ComponentActivity() {
 
     private val tasksViewModel: TasksViewModel by viewModels {
         TasksViewModel.factory((application as MotherApplication).container)
-    }
-
-    private val scheduleListViewModel: ScheduleListViewModel by viewModels {
-        ScheduleListViewModel.factory((application as MotherApplication).container)
     }
 
     private val habitListViewModel: HabitListViewModel by viewModels {
@@ -96,6 +95,22 @@ class MainActivity : ComponentActivity() {
 
     private val pomodoroViewModel: PomodoroViewModel by viewModels {
         PomodoroViewModel.factory((application as MotherApplication).container)
+    }
+
+    private val calendarViewModel: CalendarViewModel by viewModels {
+        CalendarViewModel.factory((application as MotherApplication).container)
+    }
+
+    private val statisticsViewModel: StatisticsViewModel by viewModels {
+        StatisticsViewModel.factory((application as MotherApplication).container)
+    }
+
+    private val heatmapViewModel: HeatmapViewModel by viewModels {
+        HeatmapViewModel.factory((application as MotherApplication).container)
+    }
+
+    private val achievementViewModel: AchievementViewModel by viewModels {
+        AchievementViewModel.factory((application as MotherApplication).container)
     }
 
     /** Requests POST_NOTIFICATIONS once, on first run (PRD §27). */
@@ -238,7 +253,7 @@ class MainActivity : ComponentActivity() {
                     DashboardScreen(viewModel = dashboardViewModel, onStartTimer = openTimerOrStart)
                 }
                 composable(TopLevelDestination.Calendar.route) {
-                    ScheduleListScreen(viewModel = scheduleListViewModel)
+                    CalendarScreen(viewModel = calendarViewModel)
                 }
                 composable(TopLevelDestination.Tasks.route) {
                     TasksScreen(viewModel = tasksViewModel)
@@ -247,6 +262,9 @@ class MainActivity : ComponentActivity() {
                     ProgressScreen(
                         habitListViewModel = habitListViewModel,
                         studySessionListViewModel = studySessionListViewModel,
+                        statisticsViewModel = statisticsViewModel,
+                        heatmapViewModel = heatmapViewModel,
+                        achievementViewModel = achievementViewModel,
                         onEditSession = { sessionId ->
                             navController.navigate(Routes.editSession(sessionId))
                         },

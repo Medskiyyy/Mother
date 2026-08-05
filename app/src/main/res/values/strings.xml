@@ -186,4 +186,54 @@
     <string name="reminder_minutes_before">%1$d menit sebelumnya</string>
     <string name="reminder_hours_before">%1$d jam sebelumnya</string>
     <string name="permission_notification_denied">Pengingat tidak akan bekerja tanpa izin notifikasi. Aktifkan izin notifikasi di pengaturan sistem untuk menerima pengingat.</string>
+
+    <!-- Progress tabs -->
+    <string name="progress_tab_study">Belajar</string>
+    <string name="progress_tab_statistics">Statistik</string>
+    <string name="progress_tab_heatmap">Heatmap</string>
+    <string name="progress_tab_achievement">Pencapaian</string>
+
+    <!-- Statistics -->
+    <string name="stat_study">Belajar</string>
+    <string name="stat_total_hours">Total Jam Belajar</string>
+    <string name="stat_sessions">Jumlah Sesi</string>
+    <string name="stat_avg">Rata-rata Durasi</string>
+    <string name="stat_habit">Kebiasaan</string>
+    <string name="stat_habit_done">Hari Selesai</string>
+    <string name="stat_habit_failed">Hari Gagal</string>
+    <string name="stat_streak_current">Streak Aktif</string>
+    <string name="stat_streak_best">Streak Tertinggi</string>
+    <string name="stat_task">Tugas</string>
+    <string name="stat_task_total">Total Tugas</string>
+    <string name="stat_task_completed">Tugas Selesai</string>
+    <string name="stat_task_overdue">Tugas Terlambat</string>
+    <string name="stat_task_active">Tugas Aktif</string>
+    <string name="stat_schedule">Jadwal</string>
+    <string name="stat_schedule_completed">Jadwal Selesai</string>
+    <string name="stat_schedule_missed">Jadwal Terlewat</string>
+    <string name="stat_schedule_cancelled">Jadwal Dibatalkan</string>
+    <string name="stat_period_day">Hari Ini</string>
+    <string name="stat_period_week">Minggu Ini</string>
+    <string name="stat_period_month">Bulan Ini</string>
+    <string name="stat_period_year">Tahun Ini</string>
+
+    <!-- Heatmap -->
+    <string name="heatmap_summary">Ringkasan</string>
+    <string name="heatmap_active_days">Total Hari Aktif</string>
+    <string name="heatmap_best_day">Hari Terbaik</string>
+    <string name="heatmap_longest">Durasi Terlama</string>
+    <string name="heatmap_legend_less">Sedikit</string>
+    <string name="heatmap_legend_more">Banyak</string>
+
+    <!-- Achievements -->
+    <string name="achievement_progress">%1$d / %2$d</string>
+    <string name="achievement_unlocked">Terbuka</string>
+    <string name="achievement_locked">Terkunci</string>
+
+    <!-- Calendar -->
+    <string name="calendar_session">Sesi Belajar</string>
+    <string name="calendar_day_empty">Tidak ada aktivitas pada tanggal ini.</string>
+    <string name="calendar_prev_month">Bulan sebelumnya</string>
+    <string name="calendar_next_month">Bulan berikutnya</string>
+    <string name="calendar_today">Hari Ini</string>
 </resources>
