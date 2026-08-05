@@ -11,7 +11,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Repeat
-import androidx.compose.material3.Card
+import com.mother.app.ui.components.NeoCard
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
@@ -210,7 +210,7 @@ private fun HabitRow(
         HabitStats.DayStatus.IN_PROGRESS -> stringResource(R.string.habit_status_in_progress)
         HabitStats.DayStatus.COMPLETED -> stringResource(R.string.habit_status_completed)
     }
-    Card(modifier = Modifier.fillMaxWidth()) {
+    NeoCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),

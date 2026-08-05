@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
+import com.mother.app.ui.components.NeoCard
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SnackbarHost
@@ -214,7 +214,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
 
 @Composable
 private fun ThemeCard(selected: Theme, onSelected: (Theme) -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+    NeoCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(stringResource(R.string.settings_appearance), style = MaterialTheme.typography.titleMedium)
             Theme.entries.forEach { theme ->
@@ -243,7 +243,7 @@ private fun ThemeCard(selected: Theme, onSelected: (Theme) -> Unit) {
 
 @Composable
 private fun BackupCard(lastBackup: Long?, busy: Boolean, onExport: () -> Unit, onImport: () -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+    NeoCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(stringResource(R.string.settings_backup), style = MaterialTheme.typography.titleMedium)
             Text(
@@ -273,7 +273,7 @@ private fun AboutCard() {
             context.packageManager.getPackageInfo(context.packageName, 0).versionName
         }.getOrNull() ?: "1.0.0"
     }
-    Card(modifier = Modifier.fillMaxWidth()) {
+    NeoCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(stringResource(R.string.settings_about), style = MaterialTheme.typography.titleMedium)
             Text(stringResource(R.string.app_name), style = MaterialTheme.typography.bodyMedium)

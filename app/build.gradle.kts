@@ -13,8 +13,8 @@ android {
         applicationId = "com.mother.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "2.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -48,6 +48,18 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
+    }
+}
+
+// Ship the built APK as Mother.apk regardless of build type
+// (AGP 8.x no longer exposes outputFileName).
+tasks.matching { it.name == "packageDebug" || it.name == "packageRelease" }.configureEach {
+    doLast {
+        val variantName = name.removePrefix("package").lowercase()
+        val apkDir = project.layout.buildDirectory.dir("outputs/apk/$variantName").get().asFile
+        apkDir.listFiles { file -> file.extension == "apk" }?.forEach { apk ->
+            apk.copyTo(File(apkDir, "Mother.apk"), overwrite = true)
         }
     }
 }

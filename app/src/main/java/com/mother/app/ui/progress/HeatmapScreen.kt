@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
+import com.mother.app.ui.components.NeoCard
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -107,7 +107,7 @@ fun HeatmapScreen(viewModel: HeatmapViewModel) {
             HeatmapLegend()
         }
         item {
-            Card(modifier = Modifier.fillMaxWidth()) {
+            NeoCard(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(stringResource(R.string.heatmap_summary), style = MaterialTheme.typography.titleMedium)
                     SummaryRow(stringResource(R.string.heatmap_active_days), state.totalActiveDays.toString())

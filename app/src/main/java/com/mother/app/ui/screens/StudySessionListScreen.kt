@@ -13,7 +13,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.School
-import androidx.compose.material3.Card
+import com.mother.app.ui.components.NeoCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -154,7 +154,7 @@ fun StudySessionListScreen(
 @Composable
 private fun SessionRow(item: StudySessionItem, onClick: () -> Unit, onDelete: () -> Unit) {
     val session = item.session
-    Card(
+    NeoCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)

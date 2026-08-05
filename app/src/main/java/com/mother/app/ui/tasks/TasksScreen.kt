@@ -16,7 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.TaskAlt
-import androidx.compose.material3.Card
+import com.mother.app.ui.components.NeoCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -205,7 +205,7 @@ private fun TaskSwipeRow(
 
 @Composable
 private fun TaskRow(task: TaskEntity) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+    NeoCard(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()

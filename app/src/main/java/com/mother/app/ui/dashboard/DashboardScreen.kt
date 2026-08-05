@@ -18,7 +18,7 @@ import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Timer
-import androidx.compose.material3.Card
+import com.mother.app.ui.components.NeoCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -128,7 +128,7 @@ private fun Header(greeting: String, dateLabel: String, onSearch: () -> Unit) {
 
 @Composable
 private fun StreakCard(streak: Int) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+    NeoCard(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -148,7 +148,7 @@ private fun StreakCard(streak: Int) {
 @Composable
 private fun TargetCard(currentMinutes: Int, targetMinutes: Int) {
     val progress = if (targetMinutes > 0) (currentMinutes.toFloat() / targetMinutes).coerceIn(0f, 1f) else 0f
-    Card(modifier = Modifier.fillMaxWidth()) {
+    NeoCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = stringResource(R.string.dashboard_target_today),
@@ -175,7 +175,7 @@ private fun TargetCard(currentMinutes: Int, targetMinutes: Int) {
 
 @Composable
 private fun NextActivityCard(schedule: ScheduleEntity?, onStartTimer: () -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+    NeoCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = stringResource(R.string.dashboard_next_activity),
@@ -241,7 +241,7 @@ private fun EmptyRow(text: String) {
 
 @Composable
 private fun DeadlineRow(task: TaskEntity) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+    NeoCard(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -268,7 +268,7 @@ private fun DeadlineRow(task: TaskEntity) {
 
 @Composable
 private fun ScheduleRow(schedule: ScheduleEntity) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+    NeoCard(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()

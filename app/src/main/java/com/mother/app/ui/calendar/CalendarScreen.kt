@@ -17,7 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material3.Card
+import com.mother.app.ui.components.NeoCard
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -185,7 +185,7 @@ fun CalendarScreen(viewModel: CalendarViewModel) {
             )
         }
         items(state.daySchedules, key = { "s_" + it.id }) { schedule ->
-            Card(modifier = Modifier.fillMaxWidth()) {
+            NeoCard(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(schedule.title, style = MaterialTheme.typography.titleMedium)
                     Text(
@@ -198,7 +198,7 @@ fun CalendarScreen(viewModel: CalendarViewModel) {
             }
         }
         items(state.dayTasks, key = { "t_" + it.id }) { task ->
-            Card(modifier = Modifier.fillMaxWidth()) {
+            NeoCard(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(task.title, style = MaterialTheme.typography.titleMedium)
                     Text(
@@ -211,7 +211,7 @@ fun CalendarScreen(viewModel: CalendarViewModel) {
             }
         }
         items(state.daySessions, key = { "ss_" + it.id }) { session ->
-            Card(modifier = Modifier.fillMaxWidth()) {
+            NeoCard(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(stringResource(R.string.calendar_session), style = MaterialTheme.typography.titleMedium)
                     Text(
