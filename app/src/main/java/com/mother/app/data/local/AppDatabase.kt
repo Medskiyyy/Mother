@@ -5,28 +5,36 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.mother.app.data.local.dao.AchievementDao
-import com.mother.app.data.local.dao.AttachmentDao
 import com.mother.app.data.local.dao.CategoryDao
 import com.mother.app.data.local.dao.ChecklistDao
 import com.mother.app.data.local.dao.HabitDao
-import com.mother.app.data.local.dao.ReminderDao
+import com.mother.app.data.local.dao.HabitReminderDao
 import com.mother.app.data.local.dao.RestoreHistoryDao
+import com.mother.app.data.local.dao.ScheduleAttachmentDao
 import com.mother.app.data.local.dao.ScheduleDao
+import com.mother.app.data.local.dao.ScheduleReminderDao
 import com.mother.app.data.local.dao.SettingDao
 import com.mother.app.data.local.dao.StudySessionDao
+import com.mother.app.data.local.dao.TaskAttachmentDao
 import com.mother.app.data.local.dao.TaskDao
+import com.mother.app.data.local.dao.TaskReminderDao
 import com.mother.app.data.local.entity.AchievementEntity
 import com.mother.app.data.local.entity.AppSettingEntity
-import com.mother.app.data.local.entity.AttachmentEntity
 import com.mother.app.data.local.entity.CategoryEntity
 import com.mother.app.data.local.entity.ChecklistEntity
 import com.mother.app.data.local.entity.HabitEntity
-import com.mother.app.data.local.entity.ReminderEntity
+import com.mother.app.data.local.entity.HabitReminderEntity
 import com.mother.app.data.local.entity.RestoreHistoryEntity
+import com.mother.app.data.local.entity.ScheduleAttachmentEntity
 import com.mother.app.data.local.entity.ScheduleEntity
+import com.mother.app.data.local.entity.ScheduleReminderEntity
 import com.mother.app.data.local.entity.StudySessionEntity
+import com.mother.app.data.local.entity.TaskAttachmentEntity
 import com.mother.app.data.local.entity.TaskEntity
+import com.mother.app.data.local.entity.TaskReminderEntity
 import com.mother.app.data.model.Theme
 
 @Database(
@@ -39,11 +47,14 @@ import com.mother.app.data.model.Theme
         TaskEntity::class,
         HabitEntity::class,
         StudySessionEntity::class,
-        ReminderEntity::class,
         ChecklistEntity::class,
-        AttachmentEntity::class
+        TaskReminderEntity::class,
+        ScheduleReminderEntity::class,
+        HabitReminderEntity::class,
+        TaskAttachmentEntity::class,
+        ScheduleAttachmentEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -57,9 +68,12 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun taskDao(): TaskDao
     abstract fun habitDao(): HabitDao
     abstract fun studySessionDao(): StudySessionDao
-    abstract fun reminderDao(): ReminderDao
     abstract fun checklistDao(): ChecklistDao
-    abstract fun attachmentDao(): AttachmentDao
+    abstract fun taskReminderDao(): TaskReminderDao
+    abstract fun scheduleReminderDao(): ScheduleReminderDao
+    abstract fun habitReminderDao(): HabitReminderDao
+    abstract fun taskAttachmentDao(): TaskAttachmentDao
+    abstract fun scheduleAttachmentDao(): ScheduleAttachmentDao
 
     companion object {
         const val DATABASE_NAME = "mother.db"
@@ -67,14 +81,89 @@ abstract class AppDatabase : RoomDatabase() {
         fun build(context: Context): AppDatabase =
             Room.databaseBuilder(context, AppDatabase::class.java, DATABASE_NAME)
                 .addCallback(SeedCallback)
+                .addMigrations(MIGRATION_1_2)
                 .build()
+
+        /**
+         * Replaces the generic reminder/attachment tables with per-owner tables
+         * (DATABASE_SCHEMA.md part 3). The generic tables were scaffold-only;
+         * no app version has shipped with user data in them.
+         */
+        private val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("DROP TABLE IF EXISTS reminder")
+                db.execSQL("DROP TABLE IF EXISTS attachment")
+
+                db.execSQL(
+                    "CREATE TABLE `task_reminder` (" +
+                        "`id` TEXT NOT NULL, " +
+                        "`taskId` TEXT NOT NULL, " +
+                        "`triggerTime` INTEGER NOT NULL, " +
+                        "`snoozeMinute` INTEGER NOT NULL, " +
+                        "`enabled` INTEGER NOT NULL, " +
+                        "PRIMARY KEY(`id`), " +
+                        "FOREIGN KEY(`taskId`) REFERENCES `task`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE)"
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_task_reminder_taskId` ON `task_reminder` (`taskId`)")
+
+                db.execSQL(
+                    "CREATE TABLE `schedule_reminder` (" +
+                        "`id` TEXT NOT NULL, " +
+                        "`scheduleId` TEXT NOT NULL, " +
+                        "`triggerTime` INTEGER NOT NULL, " +
+                        "`snoozeMinute` INTEGER NOT NULL, " +
+                        "`enabled` INTEGER NOT NULL, " +
+                        "PRIMARY KEY(`id`), " +
+                        "FOREIGN KEY(`scheduleId`) REFERENCES `schedule`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE)"
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_schedule_reminder_scheduleId` ON `schedule_reminder` (`scheduleId`)")
+
+                db.execSQL(
+                    "CREATE TABLE `habit_reminder` (" +
+                        "`id` TEXT NOT NULL, " +
+                        "`habitId` TEXT NOT NULL, " +
+                        "`triggerTime` INTEGER NOT NULL, " +
+                        "`snoozeMinute` INTEGER NOT NULL, " +
+                        "`enabled` INTEGER NOT NULL, " +
+                        "PRIMARY KEY(`id`), " +
+                        "FOREIGN KEY(`habitId`) REFERENCES `habit`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE)"
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_habit_reminder_habitId` ON `habit_reminder` (`habitId`)")
+
+                db.execSQL(
+                    "CREATE TABLE `task_attachment` (" +
+                        "`id` TEXT NOT NULL, " +
+                        "`taskId` TEXT NOT NULL, " +
+                        "`type` TEXT NOT NULL, " +
+                        "`fileName` TEXT NOT NULL, " +
+                        "`filePath` TEXT NOT NULL, " +
+                        "`createdAt` INTEGER NOT NULL, " +
+                        "PRIMARY KEY(`id`), " +
+                        "FOREIGN KEY(`taskId`) REFERENCES `task`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE)"
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_task_attachment_taskId` ON `task_attachment` (`taskId`)")
+
+                db.execSQL(
+                    "CREATE TABLE `schedule_attachment` (" +
+                        "`id` TEXT NOT NULL, " +
+                        "`scheduleId` TEXT NOT NULL, " +
+                        "`type` TEXT NOT NULL, " +
+                        "`fileName` TEXT NOT NULL, " +
+                        "`filePath` TEXT NOT NULL, " +
+                        "`createdAt` INTEGER NOT NULL, " +
+                        "PRIMARY KEY(`id`), " +
+                        "FOREIGN KEY(`scheduleId`) REFERENCES `schedule`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE)"
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_schedule_attachment_scheduleId` ON `schedule_attachment` (`scheduleId`)")
+            }
+        }
     }
 }
 
 /** Seeds default categories, settings, and achievement definitions on first open. */
 private object SeedCallback : RoomDatabase.Callback() {
 
-    override fun onCreate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+    override fun onCreate(db: SupportSQLiteDatabase) {
         super.onCreate(db)
         val now = System.currentTimeMillis()
 

@@ -1,11 +1,13 @@
 package com.mother.app.ui.dashboard
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
-import com.mother.app.di.AppContainer
+import com.mother.app.R
 import com.mother.app.data.local.entity.AppSettingEntity
 import com.mother.app.data.local.entity.ScheduleEntity
 import com.mother.app.data.local.entity.StudySessionEntity
@@ -14,15 +16,21 @@ import com.mother.app.data.repository.ScheduleRepository
 import com.mother.app.data.repository.SettingRepository
 import com.mother.app.data.repository.StudySessionRepository
 import com.mother.app.data.repository.TaskRepository
+import com.mother.app.di.AppContainer
 import com.mother.app.util.TimeUtils
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.Instant
+import java.time.ZoneId
 import java.time.ZonedDateTime
 
 /** UI state for the Dashboard. Single source of state (AGENT_RULES §6). */
@@ -39,8 +47,8 @@ data class DashboardUiState(
     val todaySchedule: List<ScheduleEntity> = emptyList()
 )
 
-/** Holds the five data flows combined for the dashboard. */
-private data class DataHolder(
+/** Typed holder combining the five data flows feeding the dashboard. */
+private data class DashboardData(
     val studyMin: Int,
     val schedules: List<ScheduleEntity>,
     val deadlines: List<TaskEntity>,
@@ -48,92 +56,107 @@ private data class DataHolder(
     val sessions: List<StudySessionEntity>
 )
 
+/**
+ * Builds the dashboard state. Day boundaries are re-derived from a per-second
+ * ticker so the screen rolls over at midnight and the countdown stays current
+ * (PRD §10). The streak counts consecutive days with at least one study
+ * session, ending today.
+ */
 class DashboardViewModel(
+    application: Application,
     private val scheduleRepository: ScheduleRepository,
     private val taskRepository: TaskRepository,
     private val studySessionRepository: StudySessionRepository,
     private val settingRepository: SettingRepository
-) : ViewModel() {
+) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState
 
-    private val now: () -> Long get() = { System.currentTimeMillis() }
+    /** Per-second ticker driving the greeting, next activity, and date rollover. */
+    private val tick = MutableStateFlow(System.currentTimeMillis())
+
+    /** Re-observation trigger used by the error state's retry action. */
+    private val retryTrigger = MutableStateFlow(0)
 
     init {
-        // Day boundaries. Re-derived on a single ticker so the dashboard rolls
-        // over at midnight and the countdowns stay current (AGENT_RULES §11).
-        val dayStart = MutableStateFlow(TimeUtils.todayStart())
-        val dayEnd = MutableStateFlow(TimeUtils.todayEnd())
-
         viewModelScope.launch {
             while (true) {
                 delay(1000)
-                dayStart.value = TimeUtils.todayStart()
-                dayEnd.value = TimeUtils.todayEnd()
+                tick.value = System.currentTimeMillis()
             }
         }
 
-        val studyFlow = studySessionRepository.observeTotalMinutesRange(dayStart.value, dayEnd.value)
-        val scheduleFlow = scheduleRepository.observeForDay(dayStart.value, dayEnd.value)
-        val deadlineFlow = taskRepository.observeUpcomingDeadlines(3)
-        val settingFlow = settingRepository.observeSetting()
-        val sessionsFlow = studySessionRepository.observeAllAsc()
+        val dayStart = tick.map { TimeUtils.startOfDay(it) }.distinctUntilChanged()
 
-        // Stage 1: combine the five data flows into a typed holder (typed overload).
-        val dataFlow = combine(
-            studyFlow, scheduleFlow, deadlineFlow, settingFlow, sessionsFlow
-        ) { studyMin, schedules, deadlines, setting, sessions ->
-            DataHolder(studyMin, schedules, deadlines, setting, sessions)
-        }
+        // Re-query when the day rolls over (flatMapLatest) or after a retry;
+        // failures surface as an error state instead of crashing (PRD §35).
+        val dataFlow: Flow<DashboardData> = combine(dayStart, retryTrigger) { start, _ -> start }
+            .flatMapLatest { start ->
+                val end = TimeUtils.endOfDay(start)
+                combine(
+                    studySessionRepository.observeTotalMinutesRange(start, end),
+                    scheduleRepository.observeForDay(start, end),
+                    taskRepository.observeUpcomingDeadlines(3),
+                    settingRepository.observeSetting(),
+                    studySessionRepository.observeAllAsc()
+                ) { studyMin, schedules, deadlines, setting, sessions ->
+                    DashboardData(studyMin, schedules, deadlines, setting, sessions)
+                }
+            }
+            .catch { e ->
+                _uiState.update { it.copy(isLoading = false, error = e.message ?: "Terjadi kesalahan") }
+            }
 
-        // Stage 2: combine with the day-boundary ticker to build the UI state.
         viewModelScope.launch {
-            combine(dataFlow, dayStart, dayEnd) { data, _, _ ->
-                val currentTime = now()
+            combine(dataFlow, tick) { data, currentTime ->
                 DashboardUiState(
                     isLoading = false,
                     error = null,
                     greeting = greetingForHour(currentTime),
                     dateLabel = TimeUtils.formatFullDate(currentTime),
-                    streak = computeStreak(data.sessions),
+                    streak = TimeUtils.computeStreak(data.sessions.map { it.startTime }),
                     todayStudyMinutes = data.studyMin,
                     dailyTargetMinutes = data.setting?.defaultStudyTargetMinute ?: 120,
                     nextActivity = data.schedules.firstOrNull { it.startTime > currentTime },
                     deadlines = data.deadlines,
                     todaySchedule = data.schedules
                 )
-            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DashboardUiState())
+            }
+                .catch { e ->
+                    _uiState.update { it.copy(isLoading = false, error = e.message ?: "Terjadi kesalahan") }
+                }
+                .collect { _uiState.value = it }
         }
     }
 
-    /** Re-triggers a state emission (used by the error state's retry action). */
+    /** Re-observes the data after an error (used by the error state's retry). */
     fun refresh() {
-        _uiState.update { it.copy(isLoading = false) }
+        _uiState.update { it.copy(isLoading = true, error = null) }
+        retryTrigger.update { it + 1 }
+    }
+
+    private fun greetingForHour(currentTime: Long): String {
+        val hour = ZonedDateTime.ofInstant(Instant.ofEpochMilli(currentTime), ZoneId.systemDefault()).hour
+        val resources = getApplication<Application>().resources
+        return when (hour) {
+            in 5..11 -> resources.getString(R.string.dashboard_greeting_morning)
+            in 12..15 -> resources.getString(R.string.dashboard_greeting_afternoon)
+            else -> resources.getString(R.string.dashboard_greeting_evening)
+        }
     }
 
     companion object {
         fun factory(container: AppContainer): ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 DashboardViewModel(
+                    application = checkNotNull(this[AndroidViewModelFactory.APPLICATION_KEY]),
                     scheduleRepository = container.scheduleRepository,
                     taskRepository = container.taskRepository,
                     studySessionRepository = container.studySessionRepository,
                     settingRepository = container.settingRepository
                 )
             }
-        }
-    }
-
-    private fun computeStreak(sessions: List<StudySessionEntity>): Int =
-        TimeUtils.computeStreak(sessions.map { it.startTime })
-
-    private fun greetingForHour(currentTime: Long): String {
-        val hour = ZonedDateTime.ofInstant(java.time.Instant.ofEpochMilli(currentTime), java.time.ZoneId.systemDefault()).hour
-        return when (hour) {
-            in 5..11 -> "Selamat Pagi"
-            in 12..15 -> "Selamat Siang"
-            else -> "Selamat Malam"
         }
     }
 }

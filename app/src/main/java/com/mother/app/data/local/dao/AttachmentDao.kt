@@ -4,18 +4,34 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import com.mother.app.data.local.entity.AttachmentEntity
+import com.mother.app.data.local.entity.ScheduleAttachmentEntity
+import com.mother.app.data.local.entity.TaskAttachmentEntity
 import kotlinx.coroutines.flow.Flow
 
-@Dao
-interface AttachmentDao {
+/** DAOs for the per-owner attachment tables (DATABASE_SCHEMA.md part 3). */
 
-    @Query("SELECT * FROM attachment WHERE ownerType = :ownerType AND ownerId = :ownerId ORDER BY createdAt ASC")
-    fun observeForOwner(ownerType: String, ownerId: String): Flow<List<AttachmentEntity>>
+@Dao
+interface TaskAttachmentDao {
+
+    @Query("SELECT * FROM task_attachment WHERE taskId = :taskId ORDER BY createdAt ASC")
+    fun observeForTask(taskId: String): Flow<List<TaskAttachmentEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsert(attachment: AttachmentEntity)
+    suspend fun upsert(attachment: TaskAttachmentEntity)
 
-    @Query("DELETE FROM attachment WHERE id = :id")
+    @Query("DELETE FROM task_attachment WHERE id = :id")
+    suspend fun deleteById(id: String)
+}
+
+@Dao
+interface ScheduleAttachmentDao {
+
+    @Query("SELECT * FROM schedule_attachment WHERE scheduleId = :scheduleId ORDER BY createdAt ASC")
+    fun observeForSchedule(scheduleId: String): Flow<List<ScheduleAttachmentEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(attachment: ScheduleAttachmentEntity)
+
+    @Query("DELETE FROM schedule_attachment WHERE id = :id")
     suspend fun deleteById(id: String)
 }

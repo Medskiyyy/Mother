@@ -2,7 +2,6 @@ package com.mother.app.data.local
 
 import androidx.room.TypeConverter
 import com.mother.app.data.model.AttachmentType
-import com.mother.app.data.model.OwnerType
 import com.mother.app.data.model.Priority
 import com.mother.app.data.model.RepeatType
 import com.mother.app.data.model.SessionSource
@@ -48,12 +47,6 @@ class Converters {
 
     @TypeConverter
     fun stringToAttachmentType(value: String): AttachmentType = AttachmentType.valueOf(value)
-
-    @TypeConverter
-    fun ownerTypeToString(value: OwnerType): String = value.name
-
-    @TypeConverter
-    fun stringToOwnerType(value: String): OwnerType = OwnerType.valueOf(value)
 
     @TypeConverter
     fun sessionSourceToString(value: SessionSource): String = value.name

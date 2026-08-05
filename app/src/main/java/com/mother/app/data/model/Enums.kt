@@ -18,8 +18,5 @@ enum class Theme { LIGHT, DARK, SYSTEM }
 
 enum class AttachmentType { IMAGE, PDF }
 
-/** Owner of a generic [Reminder] / [Attachment] row. */
-enum class OwnerType { TASK, SCHEDULE, HABIT }
-
 /** Origin of a StudySession. */
 enum class SessionSource { TIMER, MANUAL, POMODORO }

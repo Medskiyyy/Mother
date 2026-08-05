@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -14,11 +15,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.mother.app.data.model.Theme
 import com.mother.app.ui.dashboard.DashboardScreen
 import com.mother.app.ui.dashboard.DashboardViewModel
 import com.mother.app.ui.navigation.TopLevelDestination
@@ -34,14 +37,29 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            MotherTheme {
-                MotherApp()
-            }
+            MotherApp()
         }
     }
 
     @Composable
     private fun MotherApp() {
+        // Theme follows the user's AppSetting (PRD §29); SYSTEM tracks the OS.
+        val container = (application as MotherApplication).container
+        val setting by container.settingRepository.observeSetting().collectAsStateWithLifecycle(null)
+        val systemDark = isSystemInDarkTheme()
+        val darkTheme = when (setting?.theme) {
+            Theme.LIGHT -> false
+            Theme.DARK -> true
+            else -> systemDark
+        }
+
+        MotherTheme(darkTheme = darkTheme) {
+            MotherContent()
+        }
+    }
+
+    @Composable
+    private fun MotherContent() {
         val navController = rememberNavController()
         val backStackEntry by navController.currentBackStackEntryAsState()
         val currentRoute = backStackEntry?.destination?.route
