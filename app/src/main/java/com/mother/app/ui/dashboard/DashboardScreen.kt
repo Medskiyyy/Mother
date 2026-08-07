@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -448,23 +449,24 @@ private fun QuickActions(onStartTimer: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .height(IntrinsicSize.Max)
             .padding(top = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         QuickActionButton(
             stringResource(R.string.dashboard_quick_add_task),
             Icons.Filled.Add,
-            Modifier.weight(1f)
+            Modifier.weight(1f).fillMaxSize()
         )
         QuickActionButton(
             stringResource(R.string.dashboard_quick_add_schedule),
             Icons.AutoMirrored.Filled.EventNote,
-            Modifier.weight(1f)
+            Modifier.weight(1f).fillMaxSize()
         )
         QuickActionButton(
             stringResource(R.string.dashboard_quick_start_timer),
             Icons.Filled.Timer,
-            Modifier.weight(1f),
+            Modifier.weight(1f).fillMaxSize(),
             onClick = onStartTimer
         )
     }
@@ -478,9 +480,10 @@ private fun QuickActionButton(label: String, icon: ImageVector, modifier: Modifi
     ) {
         Column(
             modifier = Modifier
-                .fillMaxWidth()
+                .fillMaxSize()
                 .padding(horizontal = 8.dp, vertical = 12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
             Icon(icon, contentDescription = null, modifier = Modifier.size(24.dp))
             Spacer(Modifier.height(6.dp))

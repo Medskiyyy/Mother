@@ -47,12 +47,15 @@ fun Modifier.neoShadow(
 ): Modifier = drawBehind {
     val shadowOutline = shape.createOutline(size, layoutDirection, this)
     drawIntoCanvas { canvas ->
+        canvas.save()
+        canvas.translate(offsetX.toPx(), offsetY.toPx())
         canvas.drawOutline(
             outline = shadowOutline,
             paint = androidx.compose.ui.graphics.Paint().apply {
                 this.color = color
             }
         )
+        canvas.restore()
     }
 }
 

@@ -26,7 +26,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -216,14 +220,23 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
 @Composable
 private fun ThemeCard(selected: Theme, onSelected: (Theme) -> Unit) {
     NeoCard(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(stringResource(R.string.settings_appearance), style = MaterialTheme.typography.titleMedium)
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Text(
+                stringResource(R.string.settings_appearance),
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+            )
+            Spacer(Modifier.height(8.dp))
             Theme.entries.forEach { theme ->
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { onSelected(theme) }
-                        .padding(vertical = 4.dp),
+                        .padding(vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     RadioButton(selected = selected == theme, onClick = { onSelected(theme) })
@@ -234,7 +247,8 @@ private fun ThemeCard(selected: Theme, onSelected: (Theme) -> Unit) {
                                 Theme.DARK -> R.string.theme_dark
                                 Theme.SYSTEM -> R.string.theme_system
                             }
-                        )
+                        ),
+                        style = MaterialTheme.typography.bodyLarge
                     )
                 }
             }
@@ -245,25 +259,38 @@ private fun ThemeCard(selected: Theme, onSelected: (Theme) -> Unit) {
 @Composable
 private fun BackupCard(lastBackup: Long?, busy: Boolean, onExport: () -> Unit, onImport: () -> Unit) {
     NeoCard(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(stringResource(R.string.settings_backup), style = MaterialTheme.typography.titleMedium)
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Text(
+                stringResource(R.string.settings_backup),
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+            )
             Text(
                 text = lastBackup?.let {
                     stringResource(R.string.backup_last, TimeUtils.formatFullDate(it))
                 } ?: stringResource(R.string.backup_last_never),
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
                 NeoOutlinedButton(
                     text = stringResource(R.string.backup_export),
                     onClick = onExport,
-                    enabled = !busy
+                    enabled = !busy,
+                    modifier = Modifier.weight(1f)
                 )
                 NeoOutlinedButton(
                     text = stringResource(R.string.backup_import),
                     onClick = onImport,
-                    enabled = !busy
+                    enabled = !busy,
+                    modifier = Modifier.weight(1f)
                 )
             }
         }
@@ -279,12 +306,23 @@ private fun AboutCard() {
         }.getOrNull() ?: "1.0.0"
     }
     NeoCard(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(stringResource(R.string.settings_about), style = MaterialTheme.typography.titleMedium)
-            Text(stringResource(R.string.app_name), style = MaterialTheme.typography.bodyMedium)
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Text(
+                stringResource(R.string.settings_about),
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+            )
+            Text(
+                stringResource(R.string.app_name),
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black)
+            )
             Text(
                 stringResource(R.string.about_version, versionName),
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
