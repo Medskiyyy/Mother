@@ -256,7 +256,7 @@ class MainActivity : ComponentActivity() {
                     // Neobrutalism bottom bar: flat surface inside a firm 3.5dp border,
                     // selected items sit on a yellow indicator pill.
                     Surface(
-                        border = BorderStroke(3.dp, Color(0xFF121212)),
+                        border = BorderStroke(3.dp, MaterialTheme.colorScheme.outline),
                         color = MaterialTheme.colorScheme.surface,
                         tonalElevation = 0.dp
                     ) {
@@ -289,7 +289,7 @@ class MainActivity : ComponentActivity() {
                                         )
                                     },
                                     colors = NavigationBarItemDefaults.colors(
-                                        selectedIconColor = Color(0xFF121212),
+                                        selectedIconColor = MaterialTheme.colorScheme.onSurface,
                                         selectedTextColor = MaterialTheme.colorScheme.onSurface,
                                         indicatorColor = MaterialTheme.colorScheme.primary,
                                         unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -308,7 +308,7 @@ class MainActivity : ComponentActivity() {
                         onClick = { showQuickAdd = true },
                         containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = Color(0xFF121212),
-                        borderColor = Color(0xFF121212)
+                        borderColor = MaterialTheme.colorScheme.outline
                     ) {
                         androidx.compose.foundation.layout.Box(
                             modifier = Modifier.size(56.dp),

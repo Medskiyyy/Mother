@@ -226,7 +226,7 @@ private fun TaskRow(task: TaskEntity) {
         modifier = Modifier.fillMaxWidth(),
         containerColor = backgroundColor,
         contentColor = Color(0xFF121212),
-        borderColor = NeoShadowColor
+        borderColor = MaterialTheme.colorScheme.outline
     ) {
         Row(
             modifier = Modifier

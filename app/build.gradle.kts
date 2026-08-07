@@ -13,8 +13,8 @@ android {
         applicationId = "com.mother.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 4
-        versionName = "3.0.0"
+        versionCode = 5
+        versionName = "3.0.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -53,12 +53,11 @@ android {
 }
 
 // Ship the built APK as Mother.apk regardless of build type
-// (AGP 8.x no longer exposes outputFileName).
 tasks.matching { it.name == "packageDebug" || it.name == "packageRelease" }.configureEach {
     doLast {
         val variantName = name.removePrefix("package").lowercase()
         val apkDir = project.layout.buildDirectory.dir("outputs/apk/$variantName").get().asFile
-        apkDir.listFiles { file -> file.extension == "apk" }?.forEach { apk ->
+        apkDir.listFiles { file -> file.extension == "apk" && file.name != "Mother.apk" }?.forEach { apk ->
             apk.copyTo(File(apkDir, "Mother.apk"), overwrite = true)
         }
     }

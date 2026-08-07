@@ -23,38 +23,38 @@ val NeoShapes = Shapes(
 
 private val LightColorScheme = lightColorScheme(
     primary = AccentYellow,
-    onPrimary = Ink,
+    onPrimary = Color(0xFF121212),
     secondary = AccentBlue,
     onSecondary = Color.White,
     tertiary = AccentRed,
     onTertiary = Color.White,
-    background = Paper,
-    onBackground = Ink,
-    surface = CardWhite,
-    onSurface = Ink,
-    surfaceVariant = Sand,
-    onSurfaceVariant = InkSoft,
-    outline = Ink,
-    error = Color(0xFFBA1A1A),
+    background = Color(0xFFF8F5EE), // Soft Cream Warm Background
+    onBackground = Color(0xFF121212),
+    surface = Color(0xFFFFFFFF),
+    onSurface = Color(0xFF121212),
+    surfaceVariant = Color(0xFFEFEAD8),
+    onSurfaceVariant = Color(0xFF333333),
+    outline = Color(0xFF121212), // Bold Black Border for Neobrutalism
+    error = Color(0xFFE5484D),
     onError = Color.White
 )
 
 private val DarkColorScheme = darkColorScheme(
     primary = AccentYellow,
-    onPrimary = Ink,
+    onPrimary = Color(0xFF121212),
     secondary = DarkAccentBlue,
-    onSecondary = Ink,
+    onSecondary = Color(0xFF121212),
     tertiary = DarkAccentRed,
-    onTertiary = Ink,
-    background = DarkPaper,
-    onBackground = DarkInk,
-    surface = DarkCard,
-    onSurface = DarkInk,
-    surfaceVariant = DarkSand,
-    onSurfaceVariant = DarkInkSoft,
-    outline = DarkInk,
-    error = Color(0xFFFFB4AB),
-    onError = Ink
+    onTertiary = Color(0xFF121212),
+    background = Color(0xFF121212), // OLED Vantablack Dark
+    onBackground = Color(0xFFF0F0F0),
+    surface = Color(0xFF1E1E22), // Soft Dark Card
+    onSurface = Color(0xFFF0F0F0),
+    surfaceVariant = Color(0xFF2C2C32),
+    onSurfaceVariant = Color(0xFFCCCCCC),
+    outline = Color(0xFFF0F0F0), // Crisp High-contrast Border in Dark Mode
+    error = Color(0xFFFF8080),
+    onError = Color(0xFF121212)
 )
 
 @Composable

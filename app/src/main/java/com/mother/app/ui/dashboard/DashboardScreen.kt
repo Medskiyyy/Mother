@@ -146,7 +146,7 @@ private fun Header(greeting: String, dateLabel: String, onSearch: () -> Unit) {
             modifier = Modifier
                 .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.surface)
-                .border(2.5.dp, NeoShadowColor, CircleShape)
+                .border(2.5.dp, MaterialTheme.colorScheme.outline, CircleShape)
         ) {
             IconButton(onClick = onSearch) {
                 Icon(
@@ -166,7 +166,7 @@ private fun StreakCard(streak: Int) {
         modifier = Modifier.fillMaxWidth(),
         containerColor = NeoStreakYellow,
         contentColor = Color(0xFF121212),
-        borderColor = NeoShadowColor
+        borderColor = MaterialTheme.colorScheme.outline
     ) {
         Row(
             modifier = Modifier
@@ -259,7 +259,7 @@ private fun TargetCard(currentMinutes: Int, targetMinutes: Int) {
                     .height(14.dp)
                     .clip(RoundedCornerShape(7.dp))
                     .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .border(2.dp, NeoShadowColor, RoundedCornerShape(7.dp))
+                    .border(2.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(7.dp))
             ) {
                 Box(
                     modifier = Modifier
@@ -276,41 +276,47 @@ private fun TargetCard(currentMinutes: Int, targetMinutes: Int) {
 @Composable
 private fun NextActivityCard(schedule: ScheduleEntity?, onStartTimer: () -> Unit) {
     NeoCard(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = stringResource(R.string.dashboard_next_activity),
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-            )
-            Spacer(Modifier.height(8.dp))
-            if (schedule == null) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = stringResource(R.string.dashboard_next_activity_empty),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = stringResource(R.string.dashboard_next_activity).uppercase(),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Black,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    letterSpacing = 0.5.sp
                 )
-            } else {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = schedule.title,
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Text(
-                            text = TimeUtils.formatTime(schedule.startTime),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    NeoOutlinedButton(
-                        text = stringResource(R.string.dashboard_start),
-                        onClick = onStartTimer
+                Spacer(Modifier.height(4.dp))
+                if (schedule == null) {
+                    Text(
+                        text = stringResource(R.string.dashboard_next_activity_empty),
+                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                } else {
+                    Text(
+                        text = schedule.title,
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = TimeUtils.formatTime(schedule.startTime),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+            }
+            if (schedule != null) {
+                Spacer(Modifier.width(8.dp))
+                NeoOutlinedButton(
+                    text = stringResource(R.string.dashboard_start),
+                    onClick = onStartTimer
+                )
             }
         }
     }
@@ -359,7 +365,7 @@ private fun DeadlineRow(task: TaskEntity) {
         modifier = Modifier.fillMaxWidth(),
         containerColor = backgroundColor,
         contentColor = Color(0xFF121212),
-        borderColor = NeoShadowColor
+        borderColor = MaterialTheme.colorScheme.outline
     ) {
         Row(
             modifier = Modifier
@@ -404,13 +410,13 @@ private fun ScheduleRow(schedule: ScheduleEntity) {
                     .size(40.dp)
                     .clip(RoundedCornerShape(8.dp))
                     .background(MaterialTheme.colorScheme.primary)
-                    .border(2.dp, NeoShadowColor, RoundedCornerShape(8.dp)),
+                    .border(2.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Filled.Schedule,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimary,
+                    tint = Color(0xFF121212),
                     modifier = Modifier.size(22.dp)
                 )
             }

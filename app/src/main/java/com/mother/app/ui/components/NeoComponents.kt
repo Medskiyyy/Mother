@@ -65,7 +65,7 @@ fun NeoCard(
     onClick: (() -> Unit)? = null,
     containerColor: Color = MaterialTheme.colorScheme.surface,
     contentColor: Color = contentColorFor(containerColor),
-    borderColor: Color = Color(0xFF121212),
+    borderColor: Color = MaterialTheme.colorScheme.outline,
     shape: Shape = RoundedCornerShape(NeoCornerRadius),
     content: @Composable () -> Unit
 ) {
@@ -97,7 +97,7 @@ fun NeoButton(
     enabled: Boolean = true,
     containerColor: Color = MaterialTheme.colorScheme.primary,
     contentColor: Color = MaterialTheme.colorScheme.onPrimary,
-    borderColor: Color = Color(0xFF121212)
+    borderColor: Color = MaterialTheme.colorScheme.outline
 ) {
     Box(
         modifier = modifier
@@ -134,7 +134,7 @@ fun NeoOutlinedButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    borderColor: Color = Color(0xFF121212)
+    borderColor: Color = MaterialTheme.colorScheme.outline
 ) {
     Box(
         modifier = modifier
