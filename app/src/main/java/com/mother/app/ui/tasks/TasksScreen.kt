@@ -7,16 +7,18 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.TaskAlt
-import com.mother.app.ui.components.NeoCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -39,13 +41,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mother.app.R
 import com.mother.app.data.local.entity.TaskEntity
 import com.mother.app.data.model.Priority
 import com.mother.app.ui.components.EmptyState
-import com.mother.app.ui.screens.priorityLabel
+import com.mother.app.ui.components.NeoCard
+import com.mother.app.ui.components.NeoPriorityBadge
+import com.mother.app.ui.theme.NeoShadowColor
+import com.mother.app.ui.theme.PriorityAman
+import com.mother.app.ui.theme.PriorityMepet
+import com.mother.app.ui.theme.PriorityUrgent
+import com.mother.app.ui.theme.PriorityWaspada
 import com.mother.app.util.TimeUtils
 
 @Composable
@@ -94,12 +104,12 @@ fun TasksScreen(viewModel: TasksViewModel) {
                 Tab(
                     selected = state.selectedTab == TasksTab.ACTIVE,
                     onClick = { viewModel.selectTab(TasksTab.ACTIVE) },
-                    text = { Text(stringResource(R.string.tasks_tab_active)) }
+                    text = { Text(stringResource(R.string.tasks_tab_active), fontWeight = FontWeight.Bold) }
                 )
                 Tab(
                     selected = state.selectedTab == TasksTab.COMPLETED,
                     onClick = { viewModel.selectTab(TasksTab.COMPLETED) },
-                    text = { Text(stringResource(R.string.tasks_tab_completed)) }
+                    text = { Text(stringResource(R.string.tasks_tab_completed), fontWeight = FontWeight.Bold) }
                 )
             }
 
@@ -124,8 +134,8 @@ fun TasksScreen(viewModel: TasksViewModel) {
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 100.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(tasks, key = { it.id }) { task ->
                         TaskSwipeRow(
@@ -205,7 +215,19 @@ private fun TaskSwipeRow(
 
 @Composable
 private fun TaskRow(task: TaskEntity) {
-    NeoCard(modifier = Modifier.fillMaxWidth()) {
+    val backgroundColor = when (task.priority) {
+        Priority.URGENT -> PriorityUrgent
+        Priority.MEPET -> PriorityMepet
+        Priority.WASPADA -> PriorityWaspada
+        Priority.AMAN -> PriorityAman
+    }
+
+    NeoCard(
+        modifier = Modifier.fillMaxWidth(),
+        containerColor = backgroundColor,
+        contentColor = Color(0xFF121212),
+        borderColor = NeoShadowColor
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -215,29 +237,22 @@ private fun TaskRow(task: TaskEntity) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = task.title,
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
+                    color = Color(0xFF121212),
                     maxLines = 1,
-                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis
                 )
+                Spacer(Modifier.height(2.dp))
                 Text(
                     text = task.deadline?.let { TimeUtils.formatFullDate(it) }
                         ?: stringResource(R.string.field_not_selected),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                    color = Color(0xFF2C2C2C)
                 )
             }
-            Text(
-                text = priorityLabel(task.priority),
-                style = MaterialTheme.typography.labelMedium,
-                color = priorityColor(task.priority)
-            )
+            Spacer(Modifier.width(8.dp))
+            NeoPriorityBadge(priority = task.priority)
         }
     }
 }
 
-private fun priorityColor(priority: Priority): Color = when (priority) {
-    Priority.AMAN -> Color(0xFF2E7D32)
-    Priority.WASPADA -> Color(0xFFF9A825)
-    Priority.MEPET -> Color(0xFFEF6C00)
-    Priority.URGENT -> Color(0xFFC62828)
-}

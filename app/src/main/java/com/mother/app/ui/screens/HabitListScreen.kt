@@ -181,8 +181,8 @@ fun HabitListScreen(viewModel: HabitListViewModel, onStartTimer: ((HabitEntity) 
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 100.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(state.items, key = { it.habit.id }) { item ->
                     HabitRow(

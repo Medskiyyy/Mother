@@ -1,7 +1,11 @@
 package com.mother.app.ui.dashboard
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -9,8 +13,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.EventNote
 import androidx.compose.material.icons.filled.Add
@@ -27,12 +34,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mother.app.R
 import com.mother.app.data.local.entity.ScheduleEntity
@@ -42,10 +52,14 @@ import com.mother.app.ui.components.ErrorState
 import com.mother.app.ui.components.LoadingState
 import com.mother.app.ui.components.NeoCard
 import com.mother.app.ui.components.NeoOutlinedButton
-import com.mother.app.ui.screens.priorityLabel
+import com.mother.app.ui.components.NeoPriorityBadge
 import com.mother.app.ui.screens.statusLabel
-import com.mother.app.ui.theme.Ink
-import com.mother.app.ui.theme.InkSoft
+import com.mother.app.ui.theme.NeoShadowColor
+import com.mother.app.ui.theme.NeoStreakYellow
+import com.mother.app.ui.theme.PriorityAman
+import com.mother.app.ui.theme.PriorityMepet
+import com.mother.app.ui.theme.PriorityUrgent
+import com.mother.app.ui.theme.PriorityWaspada
 import com.mother.app.util.TimeUtils
 
 @Composable
@@ -63,8 +77,8 @@ fun DashboardScreen(viewModel: DashboardViewModel, onStartTimer: () -> Unit, onS
 private fun DashboardContent(state: DashboardUiState, onStartTimer: () -> Unit, onSearch: () -> Unit) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 100.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
             Header(state.greeting, state.dateLabel, onSearch)
@@ -118,51 +132,98 @@ private fun Header(greeting: String, dateLabel: String, onSearch: () -> Unit) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = greeting,
-                style = MaterialTheme.typography.headlineMedium,
+                style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Black),
                 color = MaterialTheme.colorScheme.onSurface
             )
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(2.dp))
             Text(
                 text = dateLabel,
-                style = MaterialTheme.typography.bodyLarge,
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        IconButton(onClick = onSearch) {
-            Icon(Icons.Filled.Search, contentDescription = stringResource(R.string.search_title))
+        Box(
+            modifier = Modifier
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surface)
+                .border(2.5.dp, NeoShadowColor, CircleShape)
+        ) {
+            IconButton(onClick = onSearch) {
+                Icon(
+                    Icons.Filled.Search,
+                    contentDescription = stringResource(R.string.search_title),
+                    tint = MaterialTheme.colorScheme.onSurface
+                )
+            }
         }
     }
 }
 
-/** Streak hero card: yellow block, huge tabular number, flame badge. */
+/** Streak Hero Card: Bold Neobrutalist Neon Yellow Block with black flame badge & giant number */
 @Composable
 private fun StreakCard(streak: Int) {
     NeoCard(
         modifier = Modifier.fillMaxWidth(),
-        containerColor = MaterialTheme.colorScheme.primary,
-        contentColor = MaterialTheme.colorScheme.onPrimary
+        containerColor = NeoStreakYellow,
+        contentColor = Color(0xFF121212),
+        borderColor = NeoShadowColor
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(20.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(R.string.dashboard_streak_label),
-                    style = MaterialTheme.typography.titleMedium
-                )
-                Text(
-                    text = stringResource(R.string.dashboard_streak_value, streak),
-                    style = MaterialTheme.typography.displaySmall
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(Color(0xFF121212))
+                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.dashboard_streak_label).uppercase(),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Black,
+                        color = NeoStreakYellow,
+                        letterSpacing = 1.sp
+                    )
+                }
+                Spacer(Modifier.height(8.dp))
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text(
+                        text = "$streak",
+                        fontSize = 48.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color(0xFF121212),
+                        lineHeight = 48.sp
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        text = "HARI",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color(0xFF121212),
+                        modifier = Modifier.padding(bottom = 6.dp)
+                    )
+                }
+            }
+            Box(
+                modifier = Modifier
+                    .size(64.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFF121212))
+                    .border(3.dp, Color(0xFF121212), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Whatshot,
+                    contentDescription = null,
+                    tint = NeoStreakYellow,
+                    modifier = Modifier.size(38.dp)
                 )
             }
-            Icon(
-                imageVector = Icons.Filled.Whatshot,
-                contentDescription = null,
-                modifier = Modifier.size(48.dp)
-            )
         }
     }
 }
@@ -172,25 +233,42 @@ private fun TargetCard(currentMinutes: Int, targetMinutes: Int) {
     val progress = if (targetMinutes > 0) (currentMinutes.toFloat() / targetMinutes).coerceIn(0f, 1f) else 0f
     NeoCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = stringResource(R.string.dashboard_target_today),
-                style = MaterialTheme.typography.titleMedium
-            )
-            Spacer(Modifier.height(8.dp))
-            LinearProgressIndicator(
-                progress = { progress },
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(Modifier.height(8.dp))
-            Text(
-                text = stringResource(
-                    R.string.dashboard_target_progress,
-                    TimeUtils.formatDurationCompact(currentMinutes),
-                    TimeUtils.formatDurationCompact(targetMinutes)
-                ),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(R.string.dashboard_target_today),
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                )
+                Text(
+                    text = stringResource(
+                        R.string.dashboard_target_progress,
+                        TimeUtils.formatDurationCompact(currentMinutes),
+                        TimeUtils.formatDurationCompact(targetMinutes)
+                    ),
+                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Black),
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+            Spacer(Modifier.height(12.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(14.dp)
+                    .clip(RoundedCornerShape(7.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .border(2.dp, NeoShadowColor, RoundedCornerShape(7.dp))
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(progress)
+                        .height(14.dp)
+                        .clip(RoundedCornerShape(7.dp))
+                        .background(MaterialTheme.colorScheme.primary)
+                )
+            }
         }
     }
 }
@@ -201,7 +279,7 @@ private fun NextActivityCard(schedule: ScheduleEntity?, onStartTimer: () -> Unit
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = stringResource(R.string.dashboard_next_activity),
-                style = MaterialTheme.typography.titleMedium
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
             )
             Spacer(Modifier.height(8.dp))
             if (schedule == null) {
@@ -218,7 +296,9 @@ private fun NextActivityCard(schedule: ScheduleEntity?, onStartTimer: () -> Unit
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = schedule.title,
-                            style = MaterialTheme.typography.titleMedium
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                         Text(
                             text = TimeUtils.formatTime(schedule.startTime),
@@ -240,39 +320,46 @@ private fun NextActivityCard(schedule: ScheduleEntity?, onStartTimer: () -> Unit
 private fun SectionTitle(text: String) {
     Text(
         text = text,
-        style = MaterialTheme.typography.titleMedium,
+        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black),
         modifier = Modifier.padding(top = 8.dp)
     )
 }
 
 @Composable
 private fun EmptyRow(text: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp)
+    NeoCard(
+        modifier = Modifier.fillMaxWidth(),
+        containerColor = MaterialTheme.colorScheme.surfaceVariant
     ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }
 
-/** Deadline card colored by priority level (user revision 7). */
+/** Deadline Card: Full Vibrant Color according to priority, black stroke, capsule badge */
 @Composable
 private fun DeadlineRow(task: TaskEntity) {
     val backgroundColor = when (task.priority) {
-        Priority.AMAN -> Color(0xFFBBE5C0)
-        Priority.WASPADA -> Color(0xFFFFE08A)
-        Priority.MEPET -> Color(0xFFFFC79B)
-        Priority.URGENT -> Color(0xFFFF9B9B)
+        Priority.URGENT -> PriorityUrgent
+        Priority.MEPET -> PriorityMepet
+        Priority.WASPADA -> PriorityWaspada
+        Priority.AMAN -> PriorityAman
     }
+
     NeoCard(
         modifier = Modifier.fillMaxWidth(),
         containerColor = backgroundColor,
-        contentColor = Ink
+        contentColor = Color(0xFF121212),
+        borderColor = NeoShadowColor
     ) {
         Row(
             modifier = Modifier
@@ -283,22 +370,22 @@ private fun DeadlineRow(task: TaskEntity) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = task.title,
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
+                    color = Color(0xFF121212),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
+                Spacer(Modifier.height(2.dp))
                 task.deadline?.let {
                     Text(
                         text = TimeUtils.formatFullDate(it),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = InkSoft
+                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                        color = Color(0xFF2C2C2C)
                     )
                 }
             }
-            Text(
-                text = priorityLabel(task.priority),
-                style = MaterialTheme.typography.labelMedium
-            )
+            Spacer(Modifier.width(8.dp))
+            NeoPriorityBadge(priority = task.priority)
         }
     }
 }
@@ -312,16 +399,26 @@ private fun ScheduleRow(schedule: ScheduleEntity) {
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = Icons.Filled.Schedule,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary
-            )
-            Spacer(Modifier.size(12.dp))
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.primary)
+                    .border(2.dp, NeoShadowColor, RoundedCornerShape(8.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Schedule,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+            Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = schedule.title,
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -333,7 +430,7 @@ private fun ScheduleRow(schedule: ScheduleEntity) {
             }
             Text(
                 text = statusLabel(schedule.status),
-                style = MaterialTheme.typography.labelMedium,
+                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
@@ -367,7 +464,6 @@ private fun QuickActions(onStartTimer: () -> Unit) {
     }
 }
 
-/** Neobrutalist icon-on-top quick action; label never overflows. */
 @Composable
 private fun QuickActionButton(label: String, icon: ImageVector, modifier: Modifier = Modifier, onClick: () -> Unit = {}) {
     NeoCard(
@@ -380,11 +476,11 @@ private fun QuickActionButton(label: String, icon: ImageVector, modifier: Modifi
                 .padding(horizontal = 8.dp, vertical = 12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Icon(icon, contentDescription = null)
-            Spacer(Modifier.size(6.dp))
+            Icon(icon, contentDescription = null, modifier = Modifier.size(24.dp))
+            Spacer(Modifier.height(6.dp))
             Text(
                 text = label,
-                style = MaterialTheme.typography.labelMedium,
+                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                 textAlign = TextAlign.Center,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
@@ -392,4 +488,5 @@ private fun QuickActionButton(label: String, icon: ImageVector, modifier: Modifi
         }
     }
 }
+
 

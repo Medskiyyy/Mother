@@ -31,3 +31,14 @@ val AccentGreen = Color(0xFF30A46C)
 // Dark-mode accents keep the same hues, tuned for dark backgrounds
 val DarkAccentBlue = Color(0xFF7C93FF)
 val DarkAccentRed = Color(0xFFFF8080)
+
+// Neobrutalism Priority & Vibrant Colors (High-contrast, bold, readable with black text)
+val PriorityUrgent = Color(0xFFFF6B6B) // Coral Red Vibrant
+val PriorityMepet = Color(0xFFFF9F43)  // Bright Orange
+val PriorityWaspada = Color(0xFFFECA57) // Bright Gold/Yellow
+val PriorityAman = Color(0xFF1DD1A1)   // Mint Green Vibrant
+
+val NeoShadowColor = Color(0xFF121212) // Solid Black Shadow
+val NeoStreakYellow = Color(0xFFFEE140) // Neon Yellow for Streak Hero Card
+val NeoStreakOrange = Color(0xFFFA709A)
+

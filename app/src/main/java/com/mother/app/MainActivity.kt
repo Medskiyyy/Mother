@@ -41,6 +41,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -252,57 +253,73 @@ class MainActivity : ComponentActivity() {
         Scaffold(
             bottomBar = {
                 if (!isFocusMode) {
-                // Neobrutalism bottom bar: flat surface inside a firm border,
-                // selected items sit on a yellow indicator pill.
-                Surface(
-                    border = BorderStroke(2.dp, MaterialTheme.colorScheme.outline),
-                    color = MaterialTheme.colorScheme.surface
-                ) {
-                    NavigationBar(
-                        containerColor = MaterialTheme.colorScheme.surface,
+                    // Neobrutalism bottom bar: flat surface inside a firm 3.5dp border,
+                    // selected items sit on a yellow indicator pill.
+                    Surface(
+                        border = BorderStroke(3.dp, Color(0xFF121212)),
+                        color = MaterialTheme.colorScheme.surface,
                         tonalElevation = 0.dp
                     ) {
-                        TopLevelDestination.entries.forEach { destination ->
-                            val selected = currentRoute == destination.route
-                            NavigationBarItem(
-                                selected = selected,
-                                onClick = {
-                                    navController.navigate(destination.route) {
-                                        popUpTo(navController.graph.findStartDestination().id) {
-                                            saveState = true
+                        NavigationBar(
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            tonalElevation = 0.dp
+                        ) {
+                            TopLevelDestination.entries.forEach { destination ->
+                                val selected = currentRoute == destination.route
+                                NavigationBarItem(
+                                    selected = selected,
+                                    onClick = {
+                                        navController.navigate(destination.route) {
+                                            popUpTo(navController.graph.findStartDestination().id) {
+                                                saveState = true
+                                            }
+                                            launchSingleTop = true
+                                            restoreState = true
                                         }
-                                        launchSingleTop = true
-                                        restoreState = true
-                                    }
-                                },
-                                icon = { Icon(destination.icon, contentDescription = stringResource(destination.labelRes)) },
-                                label = { Text(stringResource(destination.labelRes)) },
-                                colors = NavigationBarItemDefaults.colors(
-                                    selectedIconColor = MaterialTheme.colorScheme.onPrimary,
-                                    selectedTextColor = MaterialTheme.colorScheme.onPrimary,
-                                    indicatorColor = MaterialTheme.colorScheme.primary,
-                                    unselectedIconColor = MaterialTheme.colorScheme.onSurface,
-                                    unselectedTextColor = MaterialTheme.colorScheme.onSurface
+                                    },
+                                    icon = { Icon(destination.icon, contentDescription = stringResource(destination.labelRes)) },
+                                    label = {
+                                        Text(
+                                            text = stringResource(destination.labelRes),
+                                            style = MaterialTheme.typography.labelSmall.copy(
+                                                fontWeight = if (selected) androidx.compose.ui.text.font.FontWeight.Black else androidx.compose.ui.text.font.FontWeight.Bold
+                                            ),
+                                            maxLines = 1,
+                                            softWrap = false
+                                        )
+                                    },
+                                    colors = NavigationBarItemDefaults.colors(
+                                        selectedIconColor = Color(0xFF121212),
+                                        selectedTextColor = MaterialTheme.colorScheme.onSurface,
+                                        indicatorColor = MaterialTheme.colorScheme.primary,
+                                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
                                 )
-                            )
+                            }
                         }
                     }
                 }
-                }
             },
-            // Global FAB (UI_SPEC): neobrutalist yellow block with firm border.
+            // Global FAB (UI_SPEC): neobrutalist yellow block with firm border & shadow offset.
             floatingActionButton = {
                 if (isTopLevel && !isFocusMode) {
                     NeoCard(
                         onClick = { showQuickAdd = true },
                         containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
+                        contentColor = Color(0xFF121212),
+                        borderColor = Color(0xFF121212)
                     ) {
                         androidx.compose.foundation.layout.Box(
                             modifier = Modifier.size(56.dp),
                             contentAlignment = androidx.compose.ui.Alignment.Center
                         ) {
-                            Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.quick_add))
+                            Icon(
+                                Icons.Filled.Add,
+                                contentDescription = stringResource(R.string.quick_add),
+                                tint = Color(0xFF121212),
+                                modifier = Modifier.size(28.dp)
+                            )
                         }
                     }
                 }

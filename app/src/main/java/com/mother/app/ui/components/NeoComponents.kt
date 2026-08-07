@@ -1,7 +1,11 @@
 package com.mother.app.ui.components
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -11,42 +15,49 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.mother.app.data.model.Priority
+import com.mother.app.ui.theme.PriorityAman
+import com.mother.app.ui.theme.PriorityMepet
+import com.mother.app.ui.theme.PriorityUrgent
+import com.mother.app.ui.theme.PriorityWaspada
 
-/**
- * Neobrutalism building blocks (Docs/design_system.md): flat surfaces, firm
- * borders, hard offset shadows, high contrast. Press feedback shifts the
- * content into its shadow within the 300 ms motion budget (§Animation).
- */
+import androidx.compose.ui.graphics.drawOutline
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 
-private val NEO_BORDER_WIDTH = 2.dp
+private val NEO_BORDER_WIDTH = 3.5.dp
 private val NEO_SHADOW_OFFSET = 4.dp
+val NeoCornerRadius = 14.dp
 
 /**
  * Hard offset shadow drawn behind a component (Neobrutalism signature).
- * Use with padding so the shadow stays within the layout bounds:
- * `Modifier.neoShadow().padding(end = 4.dp, bottom = 4.dp)` (or spacing).
  */
 fun Modifier.neoShadow(
-    color: Color = Color(0xB31B1B1B),
+    color: Color = Color(0xFF121212),
     offsetX: Dp = NEO_SHADOW_OFFSET,
-    offsetY: Dp = NEO_SHADOW_OFFSET
+    offsetY: Dp = NEO_SHADOW_OFFSET,
+    shape: Shape = RoundedCornerShape(NeoCornerRadius)
 ): Modifier = drawBehind {
-    drawRect(
-        color = color,
-        topLeft = androidx.compose.ui.geometry.Offset(offsetX.toPx(), offsetY.toPx()),
-        size = size
-    )
+    val shadowOutline = shape.createOutline(size, layoutDirection, this)
+    drawIntoCanvas { canvas ->
+        canvas.drawOutline(
+            outline = shadowOutline,
+            paint = androidx.compose.ui.graphics.Paint().apply {
+                this.color = color
+            }
+        )
+    }
 }
 
 /**
- * Card with a firm border, flat surface, and a hard offset shadow
- * (Neobrutalism signature). The built-in pressed state gives quick tonal
- * feedback within the motion budget.
+ * Card with a firm 3.5dp border, flat surface, and a hard offset shadow (Neobrutalism signature).
  */
 @Composable
 fun NeoCard(
@@ -54,17 +65,20 @@ fun NeoCard(
     onClick: (() -> Unit)? = null,
     containerColor: Color = MaterialTheme.colorScheme.surface,
     contentColor: Color = contentColorFor(containerColor),
-    shape: Shape = MaterialTheme.shapes.medium,
+    borderColor: Color = Color(0xFF121212),
+    shape: Shape = RoundedCornerShape(NeoCornerRadius),
     content: @Composable () -> Unit
 ) {
-    androidx.compose.foundation.layout.Box(
-        modifier = modifier.neoShadow().padding(end = NEO_SHADOW_OFFSET, bottom = NEO_SHADOW_OFFSET)
+    Box(
+        modifier = modifier
+            .padding(end = NEO_SHADOW_OFFSET, bottom = NEO_SHADOW_OFFSET)
+            .neoShadow(color = borderColor, shape = shape)
     ) {
         Surface(
             shape = shape,
             color = containerColor,
             contentColor = contentColor,
-            border = BorderStroke(NEO_BORDER_WIDTH, MaterialTheme.colorScheme.outline),
+            border = BorderStroke(NEO_BORDER_WIDTH, borderColor),
             shadowElevation = 0.dp,
             onClick = onClick ?: {},
             enabled = onClick != null
@@ -82,25 +96,34 @@ fun NeoButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     containerColor: Color = MaterialTheme.colorScheme.primary,
-    contentColor: Color = MaterialTheme.colorScheme.onPrimary
+    contentColor: Color = MaterialTheme.colorScheme.onPrimary,
+    borderColor: Color = Color(0xFF121212)
 ) {
-    Button(
-        onClick = onClick,
-        modifier = modifier,
-        enabled = enabled,
-        shape = MaterialTheme.shapes.medium,
-        colors = ButtonDefaults.buttonColors(
-            containerColor = containerColor,
-            contentColor = contentColor
-        ),
-        border = BorderStroke(NEO_BORDER_WIDTH, MaterialTheme.colorScheme.outline),
-        elevation = ButtonDefaults.buttonElevation(
-            defaultElevation = 0.dp,
-            pressedElevation = 0.dp,
-            disabledElevation = 0.dp
-        )
+    Box(
+        modifier = modifier
+            .padding(end = 3.dp, bottom = 3.dp)
+            .neoShadow(color = borderColor, offsetX = 3.dp, offsetY = 3.dp, shape = RoundedCornerShape(10.dp))
     ) {
-        Text(text)
+        Button(
+            onClick = onClick,
+            enabled = enabled,
+            shape = RoundedCornerShape(10.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = containerColor,
+                contentColor = contentColor
+            ),
+            border = BorderStroke(2.5.dp, borderColor),
+            elevation = ButtonDefaults.buttonElevation(
+                defaultElevation = 0.dp,
+                pressedElevation = 0.dp,
+                disabledElevation = 0.dp
+            )
+        ) {
+            Text(
+                text = text,
+                fontWeight = FontWeight.Bold
+            )
+        }
     }
 }
 
@@ -110,24 +133,68 @@ fun NeoOutlinedButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    borderColor: Color = Color(0xFF121212)
 ) {
-    OutlinedButton(
-        onClick = onClick,
-        modifier = modifier,
-        enabled = enabled,
-        shape = MaterialTheme.shapes.medium,
-        colors = ButtonDefaults.outlinedButtonColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-            contentColor = MaterialTheme.colorScheme.onSurface
-        ),
-        border = BorderStroke(NEO_BORDER_WIDTH, MaterialTheme.colorScheme.outline),
-        elevation = ButtonDefaults.buttonElevation(
-            defaultElevation = 0.dp,
-            pressedElevation = 0.dp,
-            disabledElevation = 0.dp
-        )
+    Box(
+        modifier = modifier
+            .padding(end = 3.dp, bottom = 3.dp)
+            .neoShadow(color = borderColor, offsetX = 3.dp, offsetY = 3.dp, shape = RoundedCornerShape(10.dp))
     ) {
-        Text(text)
+        OutlinedButton(
+            onClick = onClick,
+            enabled = enabled,
+            shape = RoundedCornerShape(10.dp),
+            colors = ButtonDefaults.outlinedButtonColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.onSurface
+            ),
+            border = BorderStroke(2.5.dp, borderColor),
+            elevation = ButtonDefaults.buttonElevation(
+                defaultElevation = 0.dp,
+                pressedElevation = 0.dp,
+                disabledElevation = 0.dp
+            )
+        ) {
+            Text(
+                text = text,
+                fontWeight = FontWeight.Bold
+            )
+        }
     }
 }
+
+/**
+ * Capsule Priority Badge (Neobrutalist style: solid bg, black border, bold uppercase text).
+ */
+@Composable
+fun NeoPriorityBadge(
+    priority: Priority,
+    modifier: Modifier = Modifier
+) {
+    val (bgColor, textColor) = when (priority) {
+        Priority.URGENT -> PriorityUrgent to Color(0xFF121212)
+        Priority.MEPET -> PriorityMepet to Color(0xFF121212)
+        Priority.WASPADA -> PriorityWaspada to Color(0xFF121212)
+        Priority.AMAN -> PriorityAman to Color(0xFF121212)
+    }
+
+    val label = priority.name
+
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(bgColor)
+            .border(2.dp, Color(0xFF121212), RoundedCornerShape(8.dp))
+            .padding(horizontal = 10.dp, vertical = 4.dp)
+    ) {
+        Text(
+            text = label,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Black,
+            color = textColor,
+            letterSpacing = 0.5.sp
+        )
+    }
+}
+
