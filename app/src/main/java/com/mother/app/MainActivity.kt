@@ -230,10 +230,10 @@ class MainActivity : ComponentActivity() {
 
         val dashboardState by dashboardViewModel.uiState.collectAsStateWithLifecycle()
 
-        if (showMotherGreeting && !dashboardState.isLoading) {
+        if (showMotherGreeting) {
             com.mother.app.ui.components.MotherGreetingDialog(
-                taskCount = dashboardState.deadlines.size,
-                scheduleCount = dashboardState.todaySchedule.size,
+                taskCount = if (dashboardState.isLoading) 0 else dashboardState.deadlines.size,
+                scheduleCount = if (dashboardState.isLoading) 0 else dashboardState.todaySchedule.size,
                 onDismiss = { showMotherGreeting = false }
             )
         }
