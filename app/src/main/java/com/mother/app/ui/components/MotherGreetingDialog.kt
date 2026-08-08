@@ -33,31 +33,69 @@ import androidx.compose.ui.unit.sp
 import com.mother.app.ui.theme.NeoStreakYellow
 import kotlin.random.Random
 
-private val MOTHER_MESSAGES = listOf(
-    "Semangat pagi! Kamu pasti bisa melewati dan menyelesaikan target hari ini dengan baik.",
-    "Jangan lupa istirahat ya. Belajar itu penting, tapi kesehatanmu jauh lebih berharga.",
-    "Hari baru, kesempatan baru. Mari selesaikan aktivitas dan tugasmu satu per satu ya.",
-    "Bismillah, fokus dan konsisten hari ini! Setiap langkah kecil yang kamu ambil sangat berarti.",
-    "Jaga kesehatan dan jangan lupa minum air putih ya! Tetap semangat menjalani aktivitas hari ini.",
-    "Kalau merasa lelah, tarik napas dalam-dalam dan istirahat sejenak. Kamu sudah berusaha sangat baik.",
-    "Kerjakan apa yang bisa kamu selesaikan hari ini tanpa perlu terburu-buru. Pelan tapi pasti!",
-    "Fokus pada prosesnya ya. Ibu yakin kamu bisa mengatasi setiap kendala hari ini.",
-    "Jangan lupa makan tepat waktu! Tubuh yang sehat bikin pikiranmu makin jernih.",
-    "Setiap tantangan adalah kesempatan belajar. Percaya pada kemampuan dirimu sendiri ya.",
-    "Awali harimu dengan senyuman dan niat yang baik. Semoga harimu menyenangkan dan lancar!",
-    "Ingat untuk tidak menunda hal-hal kecil. Selesaikan sekarang supaya nanti malam bisa istirahat tenang.",
-    "Kamu luar biasa sudah bertahan dan berjuang sejauh ini. Teruskan semangatmu hari ini!",
-    "Belajar itu tentang konsistensi, bukan kecepatan. Ambil waktu yang kamu butuhkan.",
-    "Semoga hari ini penuh dengan kemudahan dan hasil yang memuaskan untuk semua usahamu."
-)
+/**
+ * Smart Contextual Message Generator:
+ * Generates dynamic motherly messages based on time of day, streak count, and task/schedule counts.
+ */
+fun generateMotherMessage(
+    taskCount: Int,
+    scheduleCount: Int,
+    streak: Int,
+    urgentTaskTitle: String? = null
+): String {
+    val hour = java.time.LocalTime.now().hour
+    val timeGreeting = when (hour) {
+        in 5..11 -> "Semangat pagi"
+        in 12..15 -> "Selamat siang"
+        in 16..18 -> "Selamat sore"
+        else -> "Selamat malam"
+    }
+
+    return when {
+        // Urgent task exists
+        !urgentTaskTitle.isNullOrBlank() -> {
+            "$timeGreeting! Hari ini kamu punya tugas mendesak \"$urgentTaskTitle\". Selesaikan yang ini dulu ya, biar pikiranmu tenang."
+        }
+        // High streak
+        streak >= 3 -> {
+            "Wah, hebat sekali! Streak belajarmu sudah $streak hari berturut-turut. Pertahankan konsistensimu hari ini ya."
+        }
+        // Heavy day
+        taskCount + scheduleCount >= 4 -> {
+            "$timeGreeting! Agenda dan tugasmu hari ini cukup padat ($taskCount tugas & $scheduleCount jadwal). Kerjakan satu per satu dengan tenang ya."
+        }
+        // Light day
+        taskCount == 0 && scheduleCount == 0 -> {
+            "$timeGreeting! Hari ini agenda dan tugasmu masih kosong. Gunakan waktu luang ini untuk istirahat atau mengulang materi santai ya."
+        }
+        // Night time
+        hour >= 21 -> {
+            "Sudah malam. Jangan lupa istirahat yang cukup ya, kesehatanmu jauh lebih berharga daripada porsi belajar berlebih."
+        }
+        // Default contextual greetings
+        else -> {
+            val templates = listOf(
+                "$timeGreeting! Mari selesaikan aktivitas dan tugasmu satu per satu hari ini.",
+                "Fokus dan konsisten hari ini ya! Setiap langkah kecil yang kamu ambil sangat berarti.",
+                "Jaga kesehatan dan jangan lupa minum air putih di sela-sela belajar ya.",
+                "Kalau merasa lelah, tarik napas dalam-dalam dan istirahat sejenak. Kamu sudah berusaha baik."
+            )
+            templates.random()
+        }
+    }
+}
 
 @Composable
 fun MotherGreetingDialog(
     taskCount: Int,
     scheduleCount: Int,
+    streak: Int = 0,
+    urgentTaskTitle: String? = null,
     onDismiss: () -> Unit
 ) {
-    val randomMessage = remember { MOTHER_MESSAGES[Random.nextInt(MOTHER_MESSAGES.size)] }
+    val dynamicMessage = remember(taskCount, scheduleCount, streak, urgentTaskTitle) {
+        generateMotherMessage(taskCount, scheduleCount, streak, urgentTaskTitle)
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -105,7 +143,7 @@ fun MotherGreetingDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 Text(
-                    text = randomMessage,
+                    text = dynamicMessage,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface,

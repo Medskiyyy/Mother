@@ -231,9 +231,12 @@ class MainActivity : ComponentActivity() {
         val dashboardState by dashboardViewModel.uiState.collectAsStateWithLifecycle()
 
         if (showMotherGreeting) {
+            val urgentTask = dashboardState.deadlines.firstOrNull { it.priority == com.mother.app.data.model.Priority.URGENT }
             com.mother.app.ui.components.MotherGreetingDialog(
                 taskCount = if (dashboardState.isLoading) 0 else dashboardState.deadlines.size,
                 scheduleCount = if (dashboardState.isLoading) 0 else dashboardState.todaySchedule.size,
+                streak = dashboardState.streak,
+                urgentTaskTitle = urgentTask?.title,
                 onDismiss = { showMotherGreeting = false }
             )
         }
