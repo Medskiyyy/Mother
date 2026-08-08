@@ -120,13 +120,22 @@ class ReminderReceiver : BroadcastReceiver() {
 
     private fun ensureChannel(notificationManager: NotificationManager, context: Context) {
         if (notificationManager.getNotificationChannel(CHANNEL_ID) == null) {
-            notificationManager.createNotificationChannel(
-                NotificationChannel(
-                    CHANNEL_ID,
-                    context.getString(R.string.reminder_channel_name),
-                    NotificationManager.IMPORTANCE_HIGH
+            val channel = NotificationChannel(
+                CHANNEL_ID,
+                context.getString(R.string.reminder_channel_name),
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                val soundUri = android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_ALARM)
+                setSound(
+                    soundUri,
+                    android.media.AudioAttributes.Builder()
+                        .setUsage(android.media.AudioAttributes.USAGE_ALARM)
+                        .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .build()
                 )
-            )
+                enableVibration(true)
+            }
+            notificationManager.createNotificationChannel(channel)
         }
     }
 
@@ -143,12 +152,15 @@ class ReminderReceiver : BroadcastReceiver() {
             Intent(context, MainActivity::class.java),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
-        return NotificationCompat.Builder(context, CHANNEL_ID)
+
+        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle(title.ifBlank { context.getString(R.string.reminder_notification_title) })
             .setContentText(context.getString(R.string.reminder_notification_text))
             .setOngoing(true)
             .setAutoCancel(false)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setPriority(NotificationCompat.PRIORITY_MAX)
             .setContentIntent(openIntent)
             .addAction(
                 0,
@@ -165,7 +177,26 @@ class ReminderReceiver : BroadcastReceiver() {
                 context.getString(R.string.action_skip),
                 actionPendingIntent(context, ACTION_DISMISS, ownerType, ownerId, reminderId)
             )
-            .build()
+
+        // Full Screen Loud Alarm Intent for HABIT reminders only
+        if (ownerType == ReminderScheduler.OWNER_HABIT) {
+            val alarmIntent = Intent(context, AlarmActivity::class.java).apply {
+                putExtra(ReminderScheduler.EXTRA_OWNER_TYPE, ownerType)
+                putExtra(ReminderScheduler.EXTRA_OWNER_ID, ownerId)
+                putExtra(ReminderScheduler.EXTRA_REMINDER_ID, reminderId)
+                putExtra("title", title)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            }
+            val fullScreenPendingIntent = PendingIntent.getActivity(
+                context,
+                ReminderScheduler.requestCode(reminderId),
+                alarmIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            builder.setFullScreenIntent(fullScreenPendingIntent, true)
+        }
+
+        return builder.build()
     }
 
     private fun actionPendingIntent(
