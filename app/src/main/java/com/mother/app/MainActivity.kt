@@ -8,9 +8,13 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -222,6 +226,17 @@ class MainActivity : ComponentActivity() {
         val isFocusMode = currentRoute == Routes.FOCUS
         var showQuickAdd by rememberSaveable { mutableStateOf(false) }
         var showTimerBusyDialog by rememberSaveable { mutableStateOf(false) }
+        var showMotherGreeting by rememberSaveable { mutableStateOf(true) }
+
+        val dashboardState by dashboardViewModel.uiState.collectAsStateWithLifecycle()
+
+        if (showMotherGreeting && !dashboardState.isLoading) {
+            com.mother.app.ui.components.MotherGreetingDialog(
+                taskCount = dashboardState.deadlines.size,
+                scheduleCount = dashboardState.todaySchedule.size,
+                onDismiss = { showMotherGreeting = false }
+            )
+        }
 
         /**
          * Starts the single timer for [habit] and enters Focus Mode (PRD §16/§18).
@@ -253,49 +268,55 @@ class MainActivity : ComponentActivity() {
         Scaffold(
             bottomBar = {
                 if (!isFocusMode) {
-                    // Neobrutalism bottom bar: flat surface inside a firm 3.5dp border,
-                    // selected items sit on a yellow indicator pill.
                     Surface(
-                        border = BorderStroke(3.dp, MaterialTheme.colorScheme.outline),
-                        color = MaterialTheme.colorScheme.surface,
+                        modifier = Modifier.fillMaxWidth(),
+                        color = MaterialTheme.colorScheme.background,
                         tonalElevation = 0.dp
                     ) {
-                        NavigationBar(
-                            containerColor = MaterialTheme.colorScheme.surface,
-                            tonalElevation = 0.dp
-                        ) {
-                            TopLevelDestination.entries.forEach { destination ->
-                                val selected = currentRoute == destination.route
-                                NavigationBarItem(
-                                    selected = selected,
-                                    onClick = {
-                                        navController.navigate(destination.route) {
-                                            popUpTo(navController.graph.findStartDestination().id) {
-                                                saveState = true
+                        Column {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(3.dp)
+                                    .background(MaterialTheme.colorScheme.outline)
+                            )
+                            NavigationBar(
+                                containerColor = MaterialTheme.colorScheme.background,
+                                tonalElevation = 0.dp
+                            ) {
+                                TopLevelDestination.entries.forEach { destination ->
+                                    val selected = currentRoute == destination.route
+                                    NavigationBarItem(
+                                        selected = selected,
+                                        onClick = {
+                                            navController.navigate(destination.route) {
+                                                popUpTo(navController.graph.findStartDestination().id) {
+                                                    saveState = true
+                                                }
+                                                launchSingleTop = true
+                                                restoreState = true
                                             }
-                                            launchSingleTop = true
-                                            restoreState = true
-                                        }
-                                    },
-                                    icon = { Icon(destination.icon, contentDescription = stringResource(destination.labelRes)) },
-                                    label = {
-                                        Text(
-                                            text = stringResource(destination.labelRes),
-                                            style = MaterialTheme.typography.labelSmall.copy(
-                                                fontWeight = if (selected) androidx.compose.ui.text.font.FontWeight.Black else androidx.compose.ui.text.font.FontWeight.Bold
-                                            ),
-                                            maxLines = 1,
-                                            softWrap = false
+                                        },
+                                        icon = { Icon(destination.icon, contentDescription = stringResource(destination.labelRes)) },
+                                        label = {
+                                            Text(
+                                                text = stringResource(destination.labelRes),
+                                                style = MaterialTheme.typography.labelSmall.copy(
+                                                    fontWeight = if (selected) androidx.compose.ui.text.font.FontWeight.Black else androidx.compose.ui.text.font.FontWeight.Bold
+                                                ),
+                                                maxLines = 1,
+                                                softWrap = false
+                                            )
+                                        },
+                                        colors = NavigationBarItemDefaults.colors(
+                                            selectedIconColor = MaterialTheme.colorScheme.onSurface,
+                                            selectedTextColor = MaterialTheme.colorScheme.onSurface,
+                                            indicatorColor = MaterialTheme.colorScheme.primary,
+                                            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
-                                    },
-                                    colors = NavigationBarItemDefaults.colors(
-                                        selectedIconColor = MaterialTheme.colorScheme.onSurface,
-                                        selectedTextColor = MaterialTheme.colorScheme.onSurface,
-                                        indicatorColor = MaterialTheme.colorScheme.primary,
-                                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
-                                )
+                                }
                             }
                         }
                     }
@@ -334,14 +355,23 @@ class MainActivity : ComponentActivity() {
                     DashboardScreen(
                         viewModel = dashboardViewModel,
                         onStartTimer = openTimerOrStart,
-                        onSearch = { navController.navigate(Routes.SEARCH) }
+                        onSearch = { navController.navigate(Routes.SEARCH) },
+                        onEditTask = { taskId -> navController.navigate(Routes.editTask(taskId)) },
+                        onEditSchedule = { scheduleId -> navController.navigate(Routes.editSchedule(scheduleId)) }
                     )
                 }
                 composable(TopLevelDestination.Calendar.route) {
-                    CalendarScreen(viewModel = calendarViewModel)
+                    CalendarScreen(
+                        viewModel = calendarViewModel,
+                        onEditSchedule = { scheduleId -> navController.navigate(Routes.editSchedule(scheduleId)) },
+                        onEditTask = { taskId -> navController.navigate(Routes.editTask(taskId)) }
+                    )
                 }
                 composable(TopLevelDestination.Tasks.route) {
-                    TasksScreen(viewModel = tasksViewModel)
+                    TasksScreen(
+                        viewModel = tasksViewModel,
+                        onEditTask = { taskId -> navController.navigate(Routes.editTask(taskId)) }
+                    )
                 }
                 composable(TopLevelDestination.Progress.route) {
                     ProgressScreen(
@@ -353,7 +383,8 @@ class MainActivity : ComponentActivity() {
                         onEditSession = { sessionId ->
                             navController.navigate(Routes.editSession(sessionId))
                         },
-                        onStartTimer = startTimer
+                        onStartTimer = startTimer,
+                        onEditHabit = { habitId -> navController.navigate(Routes.editHabit(habitId)) }
                     )
                 }
                 composable(TopLevelDestination.Settings.route) {
@@ -366,6 +397,14 @@ class MainActivity : ComponentActivity() {
                         onCancelled = { navController.popBackStack() }
                     )
                 }
+                composable(Routes.EDIT_TASK) { backStackEntry ->
+                    CreateTaskScreen(
+                        container = (application as MotherApplication).container,
+                        taskId = backStackEntry.arguments?.getString("taskId"),
+                        onSaved = { navController.popBackStack() },
+                        onCancelled = { navController.popBackStack() }
+                    )
+                }
                 composable(Routes.CREATE_SCHEDULE) {
                     CreateScheduleScreen(
                         container = (application as MotherApplication).container,
@@ -373,9 +412,25 @@ class MainActivity : ComponentActivity() {
                         onCancelled = { navController.popBackStack() }
                     )
                 }
+                composable(Routes.EDIT_SCHEDULE) { backStackEntry ->
+                    CreateScheduleScreen(
+                        container = (application as MotherApplication).container,
+                        scheduleId = backStackEntry.arguments?.getString("scheduleId"),
+                        onSaved = { navController.popBackStack() },
+                        onCancelled = { navController.popBackStack() }
+                    )
+                }
                 composable(Routes.CREATE_HABIT) {
                     CreateHabitScreen(
                         container = (application as MotherApplication).container,
+                        onSaved = { navController.popBackStack() },
+                        onCancelled = { navController.popBackStack() }
+                    )
+                }
+                composable(Routes.EDIT_HABIT) { backStackEntry ->
+                    CreateHabitScreen(
+                        container = (application as MotherApplication).container,
+                        habitId = backStackEntry.arguments?.getString("habitId"),
                         onSaved = { navController.popBackStack() },
                         onCancelled = { navController.popBackStack() }
                     )

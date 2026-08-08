@@ -11,6 +11,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -152,7 +155,11 @@ class CalendarViewModel(
 }
 
 @Composable
-fun CalendarScreen(viewModel: CalendarViewModel) {
+fun CalendarScreen(
+    viewModel: CalendarViewModel,
+    onEditSchedule: ((String) -> Unit)? = null,
+    onEditTask: ((String) -> Unit)? = null
+) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     LazyColumn(
@@ -185,51 +192,93 @@ fun CalendarScreen(viewModel: CalendarViewModel) {
             )
         }
         items(state.daySchedules, key = { "s_" + it.id }) { schedule ->
-            NeoCard(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        schedule.title,
-                        style = MaterialTheme.typography.titleMedium,
-                        maxLines = 1,
-                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                    )
-                    Text(
-                        "${TimeUtils.formatTime(schedule.startTime)} - ${TimeUtils.formatTime(schedule.endTime)} " +
-                            "(${statusLabel(schedule.status)})",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+            NeoCard(
+                modifier = Modifier.fillMaxWidth(),
+                onClick = { onEditSchedule?.invoke(schedule.id) }
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            schedule.title,
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            "${TimeUtils.formatTime(schedule.startTime)} - ${TimeUtils.formatTime(schedule.endTime)} " +
+                                "(${statusLabel(schedule.status)})",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
         }
         items(state.dayTasks, key = { "t_" + it.id }) { task ->
-            NeoCard(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        task.title,
-                        style = MaterialTheme.typography.titleMedium,
-                        maxLines = 1,
-                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                    )
-                    Text(
-                        stringResource(R.string.field_deadline) + ": " +
-                            TimeUtils.formatTime(task.deadline ?: 0L),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+            val backgroundColor = when (task.priority) {
+                com.mother.app.data.model.Priority.URGENT -> com.mother.app.ui.theme.PriorityUrgent
+                com.mother.app.data.model.Priority.MEPET -> com.mother.app.ui.theme.PriorityMepet
+                com.mother.app.data.model.Priority.WASPADA -> com.mother.app.ui.theme.PriorityWaspada
+                com.mother.app.data.model.Priority.AMAN -> com.mother.app.ui.theme.PriorityAman
+            }
+            NeoCard(
+                modifier = Modifier.fillMaxWidth(),
+                containerColor = backgroundColor,
+                contentColor = Color(0xFF121212),
+                borderColor = MaterialTheme.colorScheme.outline,
+                onClick = { onEditTask?.invoke(task.id) }
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            task.title,
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Black),
+                            color = Color(0xFF121212),
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                        )
+                        Spacer(Modifier.height(2.dp))
+                        Text(
+                            stringResource(R.string.field_deadline) + ": " +
+                                TimeUtils.formatTime(task.deadline ?: 0L),
+                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
+                            color = Color(0xFF2C2C2C)
+                        )
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    com.mother.app.ui.components.NeoPriorityBadge(priority = task.priority)
                 }
             }
         }
         items(state.daySessions, key = { "ss_" + it.id }) { session ->
             NeoCard(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(stringResource(R.string.calendar_session), style = MaterialTheme.typography.titleMedium)
-                    Text(
-                        "${TimeUtils.formatTime(session.startTime)} - ${TimeUtils.formatTime(session.endTime)} " +
-                            "(${TimeUtils.formatDurationCompact(session.durationMinute)})",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(stringResource(R.string.calendar_session), style = MaterialTheme.typography.titleMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold))
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            "${TimeUtils.formatTime(session.startTime)} - ${TimeUtils.formatTime(session.endTime)} " +
+                                "(${TimeUtils.formatDurationCompact(session.durationMinute)})",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
         }

@@ -18,8 +18,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.TaskAlt
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -36,7 +38,9 @@ import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -59,7 +63,7 @@ import com.mother.app.ui.theme.PriorityWaspada
 import com.mother.app.util.TimeUtils
 
 @Composable
-fun TasksScreen(viewModel: TasksViewModel) {
+fun TasksScreen(viewModel: TasksViewModel, onEditTask: ((String) -> Unit)? = null) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val undoComplete = stringResource(R.string.undo_complete_message)
@@ -140,6 +144,7 @@ fun TasksScreen(viewModel: TasksViewModel) {
                     items(tasks, key = { it.id }) { task ->
                         TaskSwipeRow(
                             task = task,
+                            onEditTask = onEditTask,
                             onDismissed = { direction ->
                                 when (direction) {
                                     SwipeToDismissBoxValue.StartToEnd ->
@@ -163,6 +168,7 @@ fun TasksScreen(viewModel: TasksViewModel) {
 @Composable
 private fun TaskSwipeRow(
     task: TaskEntity,
+    onEditTask: ((String) -> Unit)?,
     onDismissed: (SwipeToDismissBoxValue) -> Unit
 ) {
     val dismissState = rememberSwipeToDismissBoxState(
@@ -209,12 +215,14 @@ private fun TaskSwipeRow(
             }
         }
     ) {
-        TaskRow(task = task)
+        TaskRow(task = task, onEdit = { onEditTask?.invoke(task.id) })
     }
 }
 
 @Composable
-private fun TaskRow(task: TaskEntity) {
+private fun TaskRow(task: TaskEntity, onEdit: () -> Unit = {}) {
+    var showDetailDialog by remember { mutableStateOf(false) }
+
     val backgroundColor = when (task.priority) {
         Priority.URGENT -> PriorityUrgent
         Priority.MEPET -> PriorityMepet
@@ -226,7 +234,8 @@ private fun TaskRow(task: TaskEntity) {
         modifier = Modifier.fillMaxWidth(),
         containerColor = backgroundColor,
         contentColor = Color(0xFF121212),
-        borderColor = MaterialTheme.colorScheme.outline
+        borderColor = MaterialTheme.colorScheme.outline,
+        onClick = { showDetailDialog = true }
     ) {
         Row(
             modifier = Modifier
@@ -252,7 +261,78 @@ private fun TaskRow(task: TaskEntity) {
             }
             Spacer(Modifier.width(8.dp))
             NeoPriorityBadge(priority = task.priority)
+            Spacer(Modifier.width(8.dp))
+            IconButton(onClick = onEdit) {
+                Icon(
+                    imageVector = Icons.Filled.Edit,
+                    contentDescription = "Edit Tugas",
+                    tint = Color(0xFF121212)
+                )
+            }
         }
+    }
+
+    if (showDetailDialog) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showDetailDialog = false },
+            title = {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = task.title,
+                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black)
+                    )
+                    NeoPriorityBadge(priority = task.priority)
+                }
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    if (!task.description.isNullOrBlank()) {
+                        Column {
+                            Text(
+                                text = "Deskripsi:",
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                text = task.description,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        }
+                    } else {
+                        Text(
+                            text = "Tidak ada deskripsi tambahan.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    task.deadline?.let {
+                        Text(
+                            text = "Deadline: " + TimeUtils.formatFullDate(it),
+                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold)
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                com.mother.app.ui.components.NeoButton(
+                    text = "Edit Tugas",
+                    onClick = {
+                        showDetailDialog = false
+                        onEdit()
+                    }
+                )
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = { showDetailDialog = false }) {
+                    Text("Tutup")
+                }
+            }
+        )
     }
 }
 

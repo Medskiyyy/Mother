@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -81,6 +82,7 @@ class CreateTaskViewModel(
     private val taskRepository: TaskRepository,
     private val categoryRepository: CategoryRepository,
     private val reminderRepository: com.mother.app.data.repository.ReminderRepository,
+    private val taskId: String?,
     private val onSaved: () -> Unit
 ) : ViewModel() {
 
@@ -91,6 +93,22 @@ class CreateTaskViewModel(
         viewModelScope.launch {
             categoryRepository.observeAll().collect { categories ->
                 _uiState.update { it.copy(categories = categories) }
+            }
+        }
+        if (taskId != null) {
+            viewModelScope.launch {
+                val existing = taskRepository.getById(taskId)
+                if (existing != null) {
+                    _uiState.update {
+                        it.copy(
+                            title = existing.title,
+                            description = existing.description ?: "",
+                            priority = existing.priority,
+                            deadline = existing.deadline,
+                            categoryId = existing.categoryId
+                        )
+                    }
+                }
             }
         }
     }
@@ -119,6 +137,14 @@ class CreateTaskViewModel(
         state.copy(reminderOffsets = offsets)
     }
 
+    fun deleteTask() {
+        if (taskId == null) return
+        viewModelScope.launch {
+            taskRepository.deleteById(taskId)
+            onSaved()
+        }
+    }
+
     fun save() {
         val state = _uiState.value
         val titleBlank = state.title.isBlank()
@@ -131,10 +157,10 @@ class CreateTaskViewModel(
         viewModelScope.launch {
             try {
                 val now = System.currentTimeMillis()
-                val taskId = UUID.randomUUID().toString()
+                val targetId = taskId ?: UUID.randomUUID().toString()
                 taskRepository.upsert(
                     TaskEntity(
-                        id = taskId,
+                        id = targetId,
                         title = state.title.trim(),
                         description = state.description.trim().ifBlank { null },
                         categoryId = state.categoryId!!,
@@ -147,7 +173,6 @@ class CreateTaskViewModel(
                         updatedAt = now
                     )
                 )
-                // Task reminders anchor to the deadline (PRD §13).
                 val deadline = state.deadline
                 if (deadline != null) {
                     state.reminderOffsets.forEach { offset ->
@@ -157,7 +182,7 @@ class CreateTaskViewModel(
                             reminderRepository.upsertTaskReminder(
                                 TaskReminderEntity(
                                     id = reminderId,
-                                    taskId = taskId,
+                                    taskId = targetId,
                                     triggerTime = triggerTime,
                                     snoozeMinute = 0,
                                     enabled = true
@@ -166,7 +191,7 @@ class CreateTaskViewModel(
                             ReminderScheduler.schedule(
                                 context,
                                 ReminderScheduler.OWNER_TASK,
-                                taskId,
+                                targetId,
                                 reminderId,
                                 triggerTime
                             )
@@ -187,6 +212,7 @@ class CreateTaskViewModel(
 @Composable
 fun CreateTaskScreen(
     container: AppContainer,
+    taskId: String? = null,
     onSaved: () -> Unit,
     onCancelled: () -> Unit
 ) {
@@ -197,6 +223,7 @@ fun CreateTaskScreen(
             container.taskRepository,
             container.categoryRepository,
             container.reminderRepository,
+            taskId,
             onSaved
         )
     }
@@ -214,10 +241,17 @@ fun CreateTaskScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.create_task_title)) },
+                title = { Text(if (taskId != null) "Edit Tugas" else stringResource(R.string.create_task_title)) },
                 navigationIcon = {
                     IconButton(onClick = onCancelled) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.form_cancel))
+                    }
+                },
+                actions = {
+                    if (taskId != null) {
+                        IconButton(onClick = viewModel::deleteTask) {
+                            Icon(Icons.Filled.Delete, contentDescription = "Hapus Tugas", tint = MaterialTheme.colorScheme.error)
+                        }
                     }
                 }
             )

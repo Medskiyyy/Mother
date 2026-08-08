@@ -157,7 +157,11 @@ class HabitListViewModel(
 }
 
 @Composable
-fun HabitListScreen(viewModel: HabitListViewModel, onStartTimer: ((HabitEntity) -> Unit)? = null) {
+fun HabitListScreen(
+    viewModel: HabitListViewModel,
+    onStartTimer: ((HabitEntity) -> Unit)? = null,
+    onEditHabit: ((String) -> Unit)? = null
+) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -189,7 +193,8 @@ fun HabitListScreen(viewModel: HabitListViewModel, onStartTimer: ((HabitEntity) 
                         item = item,
                         remainingRestores = state.remainingRestores,
                         onRestore = { viewModel.restoreStreak(item.habit) },
-                        onStartTimer = onStartTimer?.let { start -> { start(item.habit) } }
+                        onStartTimer = onStartTimer?.let { start -> { start(item.habit) } },
+                        onClick = { onEditHabit?.invoke(item.habit.id) }
                     )
                 }
             }
@@ -202,7 +207,8 @@ private fun HabitRow(
     item: HabitProgress,
     remainingRestores: Int,
     onRestore: () -> Unit,
-    onStartTimer: (() -> Unit)? = null
+    onStartTimer: (() -> Unit)? = null,
+    onClick: () -> Unit = {}
 ) {
     val target = item.habit.targetMinute.coerceAtLeast(1)
     val progress = (item.todayMinutes.toFloat() / target).coerceIn(0f, 1f)
@@ -211,7 +217,10 @@ private fun HabitRow(
         HabitStats.DayStatus.IN_PROGRESS -> stringResource(R.string.habit_status_in_progress)
         HabitStats.DayStatus.COMPLETED -> stringResource(R.string.habit_status_completed)
     }
-    NeoCard(modifier = Modifier.fillMaxWidth()) {
+    NeoCard(
+        modifier = Modifier.fillMaxWidth(),
+        onClick = onClick
+    ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),

@@ -64,18 +64,30 @@ import com.mother.app.ui.theme.PriorityWaspada
 import com.mother.app.util.TimeUtils
 
 @Composable
-fun DashboardScreen(viewModel: DashboardViewModel, onStartTimer: () -> Unit, onSearch: () -> Unit) {
+fun DashboardScreen(
+    viewModel: DashboardViewModel,
+    onStartTimer: () -> Unit,
+    onSearch: () -> Unit,
+    onEditTask: ((String) -> Unit)? = null,
+    onEditSchedule: ((String) -> Unit)? = null
+) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     when {
         state.isLoading -> LoadingState()
         state.error != null -> ErrorState(description = state.error!!, onRetry = { viewModel.refresh() })
-        else -> DashboardContent(state, onStartTimer, onSearch)
+        else -> DashboardContent(state, onStartTimer, onSearch, onEditTask, onEditSchedule)
     }
 }
 
 @Composable
-private fun DashboardContent(state: DashboardUiState, onStartTimer: () -> Unit, onSearch: () -> Unit) {
+private fun DashboardContent(
+    state: DashboardUiState,
+    onStartTimer: () -> Unit,
+    onSearch: () -> Unit,
+    onEditTask: ((String) -> Unit)? = null,
+    onEditSchedule: ((String) -> Unit)? = null
+) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 100.dp),
@@ -102,7 +114,7 @@ private fun DashboardContent(state: DashboardUiState, onStartTimer: () -> Unit, 
             }
         } else {
             items(state.deadlines, key = { it.id }) { task ->
-                DeadlineRow(task)
+                DeadlineRow(task, onClick = { onEditTask?.invoke(task.id) })
             }
         }
         item {
@@ -114,7 +126,7 @@ private fun DashboardContent(state: DashboardUiState, onStartTimer: () -> Unit, 
             }
         } else {
             items(state.todaySchedule, key = { it.id }) { schedule ->
-                ScheduleRow(schedule)
+                ScheduleRow(schedule, onClick = { onEditSchedule?.invoke(schedule.id) })
             }
         }
         item {
@@ -354,7 +366,7 @@ private fun EmptyRow(text: String) {
 
 /** Deadline Card: Full Vibrant Color according to priority, black stroke, capsule badge */
 @Composable
-private fun DeadlineRow(task: TaskEntity) {
+private fun DeadlineRow(task: TaskEntity, onClick: () -> Unit = {}) {
     val backgroundColor = when (task.priority) {
         Priority.URGENT -> PriorityUrgent
         Priority.MEPET -> PriorityMepet
@@ -366,7 +378,8 @@ private fun DeadlineRow(task: TaskEntity) {
         modifier = Modifier.fillMaxWidth(),
         containerColor = backgroundColor,
         contentColor = Color(0xFF121212),
-        borderColor = MaterialTheme.colorScheme.outline
+        borderColor = MaterialTheme.colorScheme.outline,
+        onClick = onClick
     ) {
         Row(
             modifier = Modifier
@@ -398,8 +411,11 @@ private fun DeadlineRow(task: TaskEntity) {
 }
 
 @Composable
-private fun ScheduleRow(schedule: ScheduleEntity) {
-    NeoCard(modifier = Modifier.fillMaxWidth()) {
+private fun ScheduleRow(schedule: ScheduleEntity, onClick: () -> Unit = {}) {
+    NeoCard(
+        modifier = Modifier.fillMaxWidth(),
+        onClick = onClick
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()

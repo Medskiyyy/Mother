@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -84,6 +85,7 @@ class CreateScheduleViewModel(
     private val scheduleRepository: ScheduleRepository,
     private val categoryRepository: CategoryRepository,
     private val reminderRepository: com.mother.app.data.repository.ReminderRepository,
+    private val scheduleId: String?,
     private val onSaved: () -> Unit
 ) : ViewModel() {
 
@@ -94,6 +96,28 @@ class CreateScheduleViewModel(
         viewModelScope.launch {
             categoryRepository.observeAll().collect { categories ->
                 _uiState.update { it.copy(categories = categories) }
+            }
+        }
+        if (scheduleId != null) {
+            viewModelScope.launch {
+                val existing = scheduleRepository.getById(scheduleId)
+                if (existing != null) {
+                    val zone = java.time.ZoneId.systemDefault()
+                    val startZdt = java.time.Instant.ofEpochMilli(existing.startTime).atZone(zone)
+                    val endZdt = java.time.Instant.ofEpochMilli(existing.endTime).atZone(zone)
+                    _uiState.update {
+                        it.copy(
+                            title = existing.title,
+                            date = TimeUtils.startOfDay(existing.startTime),
+                            startHour = startZdt.hour,
+                            startMinute = startZdt.minute,
+                            endHour = endZdt.hour,
+                            endMinute = endZdt.minute,
+                            priority = existing.priority,
+                            categoryId = existing.categoryId
+                        )
+                    }
+                }
             }
         }
     }
@@ -123,6 +147,14 @@ class CreateScheduleViewModel(
         val offsets = state.reminderOffsets.toMutableSet()
         if (!offsets.add(offset)) offsets.remove(offset)
         state.copy(reminderOffsets = offsets)
+    }
+
+    fun deleteSchedule() {
+        if (scheduleId == null) return
+        viewModelScope.launch {
+            scheduleRepository.deleteById(scheduleId)
+            onSaved()
+        }
     }
 
     private fun startTimeOf(state: CreateScheduleUiState): Long =
@@ -170,7 +202,6 @@ class CreateScheduleViewModel(
         }
     }
 
-    /** Continues saving after the user accepts the conflict warning (PRD §12). */
     fun confirmConflictSave() {
         val state = _uiState.value
         _uiState.update { it.copy(showConflictDialog = false, saving = true) }
@@ -188,10 +219,10 @@ class CreateScheduleViewModel(
     private suspend fun upsertSchedule(start: Long, end: Long) {
         val state = _uiState.value
         val now = System.currentTimeMillis()
-        val scheduleId = UUID.randomUUID().toString()
+        val targetId = scheduleId ?: UUID.randomUUID().toString()
         scheduleRepository.upsert(
             ScheduleEntity(
-                id = scheduleId,
+                id = targetId,
                 title = state.title.trim(),
                 description = null,
                 categoryId = state.categoryId!!,
@@ -207,7 +238,6 @@ class CreateScheduleViewModel(
                 updatedAt = now
             )
         )
-        // Reminders are anchored to the start time; offsets are minutes before.
         state.reminderOffsets.forEach { offset ->
             val triggerTime = start - offset * 60_000L
             if (triggerTime > now) {
@@ -215,7 +245,7 @@ class CreateScheduleViewModel(
                 reminderRepository.upsertScheduleReminder(
                     ScheduleReminderEntity(
                         id = reminderId,
-                        scheduleId = scheduleId,
+                        scheduleId = targetId,
                         triggerTime = triggerTime,
                         snoozeMinute = 0,
                         enabled = true
@@ -224,7 +254,7 @@ class CreateScheduleViewModel(
                 ReminderScheduler.schedule(
                     context,
                     ReminderScheduler.OWNER_SCHEDULE,
-                    scheduleId,
+                    targetId,
                     reminderId,
                     triggerTime
                 )
@@ -240,6 +270,7 @@ class CreateScheduleViewModel(
 @Composable
 fun CreateScheduleScreen(
     container: AppContainer,
+    scheduleId: String? = null,
     onSaved: () -> Unit,
     onCancelled: () -> Unit
 ) {
@@ -250,6 +281,7 @@ fun CreateScheduleScreen(
             container.scheduleRepository,
             container.categoryRepository,
             container.reminderRepository,
+            scheduleId,
             onSaved
         )
     }
@@ -273,10 +305,17 @@ fun CreateScheduleScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.create_schedule_title)) },
+                title = { Text(if (scheduleId != null) "Edit Jadwal" else stringResource(R.string.create_schedule_title)) },
                 navigationIcon = {
                     IconButton(onClick = onCancelled) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.form_cancel))
+                    }
+                },
+                actions = {
+                    if (scheduleId != null) {
+                        IconButton(onClick = viewModel::deleteSchedule) {
+                            Icon(Icons.Filled.Delete, contentDescription = "Hapus Jadwal", tint = MaterialTheme.colorScheme.error)
+                        }
                     }
                 }
             )

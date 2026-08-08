@@ -26,8 +26,11 @@ enum class TopLevelDestination(
 /** Secondary routes reachable from the FAB and list screens. */
 object Routes {
     const val CREATE_TASK = "task/create"
+    const val EDIT_TASK = "task/edit/{taskId}"
     const val CREATE_SCHEDULE = "schedule/create"
+    const val EDIT_SCHEDULE = "schedule/edit/{scheduleId}"
     const val CREATE_HABIT = "habit/create"
+    const val EDIT_HABIT = "habit/edit/{habitId}"
     const val SESSIONS = "sessions"
     const val CREATE_SESSION = "session/create"
     const val EDIT_SESSION = "session/edit/{sessionId}"
@@ -35,5 +38,8 @@ object Routes {
     const val POMODORO = "pomodoro"
     const val SEARCH = "search"
 
+    fun editTask(taskId: String): String = "task/edit/$taskId"
+    fun editSchedule(scheduleId: String): String = "schedule/edit/$scheduleId"
+    fun editHabit(habitId: String): String = "habit/edit/$habitId"
     fun editSession(sessionId: String): String = "session/edit/$sessionId"
 }

@@ -13,6 +13,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -78,10 +79,9 @@ data class CreateHabitUiState(
 )
 
 class CreateHabitViewModel(
-    private val context: android.content.Context,
     private val habitRepository: HabitRepository,
     private val categoryRepository: CategoryRepository,
-    private val reminderRepository: com.mother.app.data.repository.ReminderRepository,
+    private val habitId: String?,
     private val onSaved: () -> Unit
 ) : ViewModel() {
 
@@ -92,6 +92,21 @@ class CreateHabitViewModel(
         viewModelScope.launch {
             categoryRepository.observeAll().collect { categories ->
                 _uiState.update { it.copy(categories = categories) }
+            }
+        }
+        if (habitId != null) {
+            viewModelScope.launch {
+                val existing = habitRepository.getById(habitId)
+                if (existing != null) {
+                    _uiState.update {
+                        it.copy(
+                            title = existing.title,
+                            targetMinute = existing.targetMinute.toString(),
+                            repeatType = existing.repeatType,
+                            categoryId = existing.categoryId
+                        )
+                    }
+                }
             }
         }
     }
@@ -112,67 +127,56 @@ class CreateHabitViewModel(
     fun selectCategory(category: CategoryEntity) =
         _uiState.update { it.copy(categoryId = category.id, showCategoryPicker = false, categoryError = false) }
 
-    /** Sets the daily reminder time; pass hour=null to remove the reminder. */
     fun onReminderChange(hour: Int?, minute: Int) =
         _uiState.update { it.copy(reminderHour = hour, reminderMinute = minute) }
 
+    fun deleteHabit() {
+        if (habitId == null) return
+        viewModelScope.launch {
+            habitRepository.deleteById(habitId)
+            onSaved()
+        }
+    }
+
     fun save() {
         val state = _uiState.value
-        val target = state.targetMinute.toIntOrNull() ?: 0
         val titleBlank = state.title.isBlank()
+        val target = state.targetMinute.toIntOrNull() ?: 0
         val targetInvalid = target <= 0
         val categoryMissing = state.categoryId == null
         if (titleBlank || targetInvalid || categoryMissing) {
             _uiState.update {
-                it.copy(titleError = titleBlank, targetError = targetInvalid, categoryError = categoryMissing)
+                it.copy(
+                    titleError = titleBlank,
+                    targetError = targetInvalid,
+                    categoryError = categoryMissing
+                )
             }
             return
         }
-        val category = state.categories.first { it.id == state.categoryId }
+        val category = state.categories.firstOrNull { it.id == state.categoryId }
         _uiState.update { it.copy(saving = true, errorMessage = null) }
         viewModelScope.launch {
             try {
                 val now = System.currentTimeMillis()
-                val habitId = UUID.randomUUID().toString()
-                val reminderHour = state.reminderHour
+                val targetId = habitId ?: UUID.randomUUID().toString()
                 habitRepository.upsert(
                     HabitEntity(
-                        id = habitId,
-                        categoryId = category.id,
+                        id = targetId,
+                        categoryId = state.categoryId!!,
                         title = state.title.trim(),
                         targetMinute = target,
                         repeatType = state.repeatType,
                         customRepeatRule = null,
-                        reminderEnabled = reminderHour != null,
-                        color = category.color,
-                        icon = category.icon,
+                        reminderEnabled = state.reminderHour != null,
+                        color = category?.color ?: "#FF9F43",
+                        icon = category?.icon ?: "tag",
                         note = null,
                         archived = false,
                         createdAt = now,
                         updatedAt = now
                     )
                 )
-                // Habit reminders ring daily at the chosen wall-clock time.
-                if (reminderHour != null) {
-                    val reminderId = UUID.randomUUID().toString()
-                    val triggerTime = TimeUtils.atLocalTime(now, reminderHour, state.reminderMinute)
-                    reminderRepository.upsertHabitReminder(
-                        HabitReminderEntity(
-                            id = reminderId,
-                            habitId = habitId,
-                            triggerTime = triggerTime,
-                            snoozeMinute = 0,
-                            enabled = true
-                        )
-                    )
-                    ReminderScheduler.scheduleRepeating(
-                        context,
-                        ReminderScheduler.OWNER_HABIT,
-                        habitId,
-                        reminderId,
-                        triggerTime
-                    )
-                }
                 onSaved()
             } catch (e: Exception) {
                 _uiState.update { it.copy(saving = false, errorMessage = e.message) }
@@ -187,16 +191,15 @@ class CreateHabitViewModel(
 @Composable
 fun CreateHabitScreen(
     container: AppContainer,
+    habitId: String? = null,
     onSaved: () -> Unit,
     onCancelled: () -> Unit
 ) {
-    val context = androidx.compose.ui.platform.LocalContext.current
     val viewModel: CreateHabitViewModel = viewModel {
         CreateHabitViewModel(
-            context.applicationContext,
             container.habitRepository,
             container.categoryRepository,
-            container.reminderRepository,
+            habitId,
             onSaved
         )
     }
@@ -214,10 +217,17 @@ fun CreateHabitScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.create_habit_title)) },
+                title = { Text(if (habitId != null) "Edit Kebiasaan" else stringResource(R.string.create_habit_title)) },
                 navigationIcon = {
                     IconButton(onClick = onCancelled) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.form_cancel))
+                    }
+                },
+                actions = {
+                    if (habitId != null) {
+                        IconButton(onClick = viewModel::deleteHabit) {
+                            Icon(Icons.Filled.Delete, contentDescription = "Hapus Kebiasaan", tint = MaterialTheme.colorScheme.error)
+                        }
                     }
                 }
             )
