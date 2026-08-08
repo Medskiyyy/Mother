@@ -34,11 +34,21 @@ import com.mother.app.ui.theme.NeoStreakYellow
 import kotlin.random.Random
 
 private val MOTHER_MESSAGES = listOf(
-    "Semangat pagi anakku! Ibu percaya kamu pasti bisa melewati dan menyelesaikan target hari ini dengan baik.",
-    "Jangan lupa istirahat ya nak. Belajar itu penting, tapi kesehatanmu jauh lebih berharga untuk Ibu.",
-    "Halo sayang! Hari baru, kesempatan baru. Mari selesaikan aktivitas dan tugasmu satu per satu ya.",
-    "Bismillah, fokus dan konsisten hari ini! Setiap langkah kecil yang kamu ambil sangat membanggakan Ibu.",
-    "Jaga kesehatan dan jangan lupa minum air putih ya! Ibu selalu mendukung setiap perjuanganmu hari ini."
+    "Semangat pagi! Kamu pasti bisa melewati dan menyelesaikan target hari ini dengan baik.",
+    "Jangan lupa istirahat ya. Belajar itu penting, tapi kesehatanmu jauh lebih berharga.",
+    "Hari baru, kesempatan baru. Mari selesaikan aktivitas dan tugasmu satu per satu ya.",
+    "Bismillah, fokus dan konsisten hari ini! Setiap langkah kecil yang kamu ambil sangat berarti.",
+    "Jaga kesehatan dan jangan lupa minum air putih ya! Tetap semangat menjalani aktivitas hari ini.",
+    "Kalau merasa lelah, tarik napas dalam-dalam dan istirahat sejenak. Kamu sudah berusaha sangat baik.",
+    "Kerjakan apa yang bisa kamu selesaikan hari ini tanpa perlu terburu-buru. Pelan tapi pasti!",
+    "Fokus pada prosesnya ya. Ibu yakin kamu bisa mengatasi setiap kendala hari ini.",
+    "Jangan lupa makan tepat waktu! Tubuh yang sehat bikin pikiranmu makin jernih.",
+    "Setiap tantangan adalah kesempatan belajar. Percaya pada kemampuan dirimu sendiri ya.",
+    "Awali harimu dengan senyuman dan niat yang baik. Semoga harimu menyenangkan dan lancar!",
+    "Ingat untuk tidak menunda hal-hal kecil. Selesaikan sekarang supaya nanti malam bisa istirahat tenang.",
+    "Kamu luar biasa sudah bertahan dan berjuang sejauh ini. Teruskan semangatmu hari ini!",
+    "Belajar itu tentang konsistensi, bukan kecepatan. Ambil waktu yang kamu butuhkan.",
+    "Semoga hari ini penuh dengan kemudahan dan hasil yang memuaskan untuk semua usahamu."
 )
 
 @Composable
@@ -95,7 +105,7 @@ fun MotherGreetingDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 Text(
-                    text = "\"$randomMessage\"",
+                    text = randomMessage,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface,
