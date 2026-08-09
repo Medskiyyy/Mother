@@ -43,6 +43,16 @@ class ReminderReceiver : BroadcastReceiver() {
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val title = loadTitle(container.reminderRepository, container, ownerType, ownerId)
+                if (ownerType == ReminderScheduler.OWNER_HABIT) {
+                    val alarmIntent = Intent(context, AlarmActivity::class.java).apply {
+                        putExtra(ReminderScheduler.EXTRA_OWNER_TYPE, ownerType)
+                        putExtra(ReminderScheduler.EXTRA_OWNER_ID, ownerId)
+                        putExtra(ReminderScheduler.EXTRA_REMINDER_ID, reminderId)
+                        putExtra("title", title)
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                    }
+                    context.startActivity(alarmIntent)
+                }
                 val notificationManager =
                     context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
                 ensureChannel(notificationManager, context)

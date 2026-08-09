@@ -154,7 +154,7 @@ class AlarmActivity : ComponentActivity() {
     private fun snoozeReminder(ownerType: String, ownerId: String, reminderId: String) {
         val container = (applicationContext as MotherApplication).container
         CoroutineScope(Dispatchers.IO).launch {
-            val newTrigger = System.currentTimeMillis() + 10 * 60_000L
+            val newTrigger = System.currentTimeMillis() + 5 * 60_000L
             ReminderScheduler.schedule(applicationContext, ownerType, ownerId, reminderId, newTrigger)
         }
     }
@@ -232,7 +232,7 @@ private fun AlarmScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 NeoOutlinedButton(
-                    text = "Tunda 10 Mnt",
+                    text = "Tunda 5 Mnt",
                     onClick = onSnooze,
                     modifier = Modifier.weight(1f)
                 )
