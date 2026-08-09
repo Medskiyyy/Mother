@@ -40,6 +40,17 @@ class ReminderReceiver : BroadcastReceiver() {
     private fun handleRing(context: Context, ownerType: String, ownerId: String, reminderId: String) {
         val pending = goAsync()
         val container = (context.applicationContext as MotherApplication).container
+
+        // Acquire a WakeLock to guarantee the device stays awake during alarm launch
+        val powerManager = context.getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
+        val wakeLock = powerManager.newWakeLock(
+            android.os.PowerManager.FULL_WAKE_LOCK or
+                    android.os.PowerManager.ACQUIRE_CAUSES_WAKEUP or
+                    android.os.PowerManager.ON_AFTER_RELEASE,
+            "Mother:AlarmWakeLock"
+        )
+        wakeLock.acquire(60_000L) // 60 seconds max
+
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val title = loadTitle(container.reminderRepository, container, ownerType, ownerId)
@@ -52,6 +63,10 @@ class ReminderReceiver : BroadcastReceiver() {
                         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
                     }
                     context.startActivity(alarmIntent)
+
+                    // Re-schedule for the next day since setAlarmClock is one-shot
+                    val nextTrigger = System.currentTimeMillis() + android.app.AlarmManager.INTERVAL_DAY
+                    ReminderScheduler.schedule(context, ownerType, ownerId, reminderId, nextTrigger)
                 }
                 val notificationManager =
                     context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -61,6 +76,7 @@ class ReminderReceiver : BroadcastReceiver() {
                     buildNotification(context, ownerType, ownerId, reminderId, title)
                 )
             } finally {
+                try { wakeLock.release() } catch (_: Exception) {}
                 pending.finish()
             }
         }
@@ -129,24 +145,28 @@ class ReminderReceiver : BroadcastReceiver() {
     }
 
     private fun ensureChannel(notificationManager: NotificationManager, context: Context) {
-        if (notificationManager.getNotificationChannel(CHANNEL_ID) == null) {
-            val channel = NotificationChannel(
-                CHANNEL_ID,
-                context.getString(R.string.reminder_channel_name),
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                val soundUri = android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_ALARM)
-                setSound(
-                    soundUri,
-                    android.media.AudioAttributes.Builder()
-                        .setUsage(android.media.AudioAttributes.USAGE_ALARM)
-                        .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                        .build()
-                )
-                enableVibration(true)
-            }
-            notificationManager.createNotificationChannel(channel)
+        // Delete and recreate to force alarm sound config (Android caches channels
+        // and ignores updates, so old installs would keep the silent channel)
+        notificationManager.deleteNotificationChannel(CHANNEL_ID)
+        val channel = NotificationChannel(
+            CHANNEL_ID,
+            context.getString(R.string.reminder_channel_name),
+            NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            val soundUri = android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_ALARM)
+            setSound(
+                soundUri,
+                android.media.AudioAttributes.Builder()
+                    .setUsage(android.media.AudioAttributes.USAGE_ALARM)
+                    .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build()
+            )
+            enableVibration(true)
+            vibrationPattern = longArrayOf(0, 1000, 500, 1000)
+            setBypassDnd(true)
+            lockscreenVisibility = Notification.VISIBILITY_PUBLIC
         }
+        notificationManager.createNotificationChannel(channel)
     }
 
     private fun buildNotification(
@@ -236,7 +256,7 @@ class ReminderReceiver : BroadcastReceiver() {
         const val ACTION_START = "com.mother.app.action.REMINDER_START"
         const val ACTION_SNOOZE = "com.mother.app.action.REMINDER_SNOOZE"
         const val ACTION_DISMISS = "com.mother.app.action.REMINDER_DISMISS"
-        private const val DEFAULT_SNOOZE_MINUTE = 10
+        private const val DEFAULT_SNOOZE_MINUTE = 5
     }
 }
 

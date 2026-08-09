@@ -30,6 +30,10 @@ object ReminderScheduler {
      * identical so [cancel] can find the pending intent.
      */
     fun schedule(context: Context, ownerType: String, ownerId: String, reminderId: String, triggerTime: Long) {
+        if (ownerType == OWNER_HABIT) {
+            scheduleAlarmClock(context, ownerType, ownerId, reminderId, triggerTime)
+            return
+        }
         val alarmManager = context.getSystemService<AlarmManager>() ?: return
         val pendingIntent = buildPendingIntent(context, ownerType, ownerId, reminderId)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
@@ -40,9 +44,27 @@ object ReminderScheduler {
     }
 
     /**
+     * Uses AlarmManager.setAlarmClock for habit reminders. This is critical because:
+     * 1. setAlarmClock grants the system permission to launch Activities from background
+     * 2. It shows the alarm icon in the status bar (like a real alarm)
+     * 3. It bypasses Doze mode and battery restrictions
+     */
+    private fun scheduleAlarmClock(context: Context, ownerType: String, ownerId: String, reminderId: String, triggerTime: Long) {
+        val alarmManager = context.getSystemService<AlarmManager>() ?: return
+        val pendingIntent = buildPendingIntent(context, ownerType, ownerId, reminderId)
+        val showIntent = PendingIntent.getActivity(
+            context, 0,
+            Intent(context, AlarmActivity::class.java),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val alarmClockInfo = AlarmManager.AlarmClockInfo(triggerTime, showIntent)
+        alarmManager.setAlarmClock(alarmClockInfo, pendingIntent)
+    }
+
+    /**
      * Schedules a daily repeating alarm (used for habit reminders, which ring
-     * every day at the same wall-clock time). Exact repeating alarms are not
-     * available while dozing, so this uses an inexact repeating alarm.
+     * every day at the same wall-clock time). Uses setAlarmClock for the first
+     * trigger, then the receiver re-schedules for the next day.
      */
     fun scheduleRepeating(
         context: Context,
@@ -51,6 +73,10 @@ object ReminderScheduler {
         reminderId: String,
         triggerTime: Long
     ) {
+        if (ownerType == OWNER_HABIT) {
+            scheduleAlarmClock(context, ownerType, ownerId, reminderId, triggerTime)
+            return
+        }
         val alarmManager = context.getSystemService<AlarmManager>() ?: return
         val pendingIntent = buildPendingIntent(context, ownerType, ownerId, reminderId)
         alarmManager.setRepeating(
