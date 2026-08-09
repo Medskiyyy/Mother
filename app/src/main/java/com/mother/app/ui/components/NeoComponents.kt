@@ -9,12 +9,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
@@ -92,7 +95,10 @@ fun NeoCard(
     }
 }
 
+
+
 /** Primary filled button with a firm border (hard shadow look, no elevation). */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NeoButton(
     text: String,
@@ -101,70 +107,92 @@ fun NeoButton(
     enabled: Boolean = true,
     containerColor: Color = MaterialTheme.colorScheme.primary,
     contentColor: Color = MaterialTheme.colorScheme.onPrimary,
-    borderColor: Color = MaterialTheme.colorScheme.outline
+    borderColor: Color = MaterialTheme.colorScheme.outline,
+    fontSize: androidx.compose.ui.unit.TextUnit = androidx.compose.ui.unit.TextUnit.Unspecified,
+    contentPadding: androidx.compose.foundation.layout.PaddingValues = ButtonDefaults.ContentPadding,
+    fullWidth: Boolean = true
 ) {
-    Box(
-        modifier = modifier
-            .padding(end = 3.dp, bottom = 3.dp)
-            .neoShadow(color = borderColor, offsetX = 3.dp, offsetY = 3.dp, shape = RoundedCornerShape(10.dp))
-    ) {
-        Button(
-            onClick = onClick,
-            enabled = enabled,
-            shape = RoundedCornerShape(10.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = containerColor,
-                contentColor = contentColor
-            ),
-            border = BorderStroke(2.5.dp, borderColor),
-            elevation = ButtonDefaults.buttonElevation(
-                defaultElevation = 0.dp,
-                pressedElevation = 0.dp,
-                disabledElevation = 0.dp
-            ),
-            modifier = Modifier.fillMaxWidth()
+    CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
+        Box(
+            modifier = modifier
+                .padding(end = 3.dp, bottom = 3.dp)
+                .neoShadow(color = borderColor, offsetX = 3.dp, offsetY = 3.dp, shape = RoundedCornerShape(10.dp))
         ) {
-            Text(
-                text = text,
-                fontWeight = FontWeight.Bold
-            )
+            Button(
+                onClick = onClick,
+                enabled = enabled,
+                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = containerColor,
+                    contentColor = contentColor
+                ),
+                border = BorderStroke(2.5.dp, borderColor),
+                contentPadding = contentPadding,
+                elevation = ButtonDefaults.buttonElevation(
+                    defaultElevation = 0.dp,
+                    pressedElevation = 0.dp,
+                    disabledElevation = 0.dp
+                ),
+                modifier = if (fullWidth) Modifier.fillMaxWidth() else Modifier
+            ) {
+                Text(
+                    text = text,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = fontSize,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    maxLines = 1
+                )
+            }
         }
     }
 }
 
 /** Secondary outlined button keeping the neobrutalist border treatment. */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NeoOutlinedButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    borderColor: Color = MaterialTheme.colorScheme.outline
+    containerColor: Color = MaterialTheme.colorScheme.surface,
+    contentColor: Color = MaterialTheme.colorScheme.onSurface,
+    borderColor: Color = MaterialTheme.colorScheme.outline,
+    fontSize: androidx.compose.ui.unit.TextUnit = androidx.compose.ui.unit.TextUnit.Unspecified,
+    contentPadding: androidx.compose.foundation.layout.PaddingValues = ButtonDefaults.ContentPadding,
+    fullWidth: Boolean = true
 ) {
-    Box(
-        modifier = modifier
-            .padding(end = 3.dp, bottom = 3.dp)
-            .neoShadow(color = borderColor, offsetX = 3.dp, offsetY = 3.dp, shape = RoundedCornerShape(10.dp))
-    ) {
-        OutlinedButton(
-            onClick = onClick,
-            enabled = enabled,
-            shape = RoundedCornerShape(10.dp),
-            colors = ButtonDefaults.outlinedButtonColors(
-                containerColor = MaterialTheme.colorScheme.surface,
-                contentColor = MaterialTheme.colorScheme.onSurface
-            ),
-            border = BorderStroke(2.5.dp, borderColor),
-            elevation = ButtonDefaults.buttonElevation(
-                defaultElevation = 0.dp,
-                pressedElevation = 0.dp,
-                disabledElevation = 0.dp
-            )
+    CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
+        Box(
+            modifier = modifier
+                .padding(end = 3.dp, bottom = 3.dp)
+                .neoShadow(color = borderColor, offsetX = 3.dp, offsetY = 3.dp, shape = RoundedCornerShape(10.dp))
         ) {
-            Text(
-                text = text,
-                fontWeight = FontWeight.Bold
-            )
+            OutlinedButton(
+                onClick = onClick,
+                enabled = enabled,
+                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    containerColor = containerColor,
+                    contentColor = contentColor
+                ),
+                border = BorderStroke(2.5.dp, borderColor),
+                contentPadding = contentPadding,
+                elevation = ButtonDefaults.buttonElevation(
+                    defaultElevation = 0.dp,
+                    pressedElevation = 0.dp,
+                    disabledElevation = 0.dp
+                ),
+                modifier = if (fullWidth) Modifier.fillMaxWidth() else Modifier
+            ) {
+                Text(
+                    text = text,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = fontSize,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    maxLines = 1
+                )
+            }
         }
     }
 }

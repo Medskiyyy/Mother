@@ -11,6 +11,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Repeat
+import androidx.compose.material.icons.filled.Whatshot
+import androidx.compose.material3.Icon
 import com.mother.app.ui.components.NeoCard
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -26,7 +28,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -221,7 +229,11 @@ private fun HabitRow(
         modifier = Modifier.fillMaxWidth(),
         onClick = onClick
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -229,12 +241,12 @@ private fun HabitRow(
             ) {
                 Text(
                     text = item.habit.title,
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                     modifier = Modifier.weight(1f)
                 )
                 Text(
                     text = statusLabel,
-                    style = MaterialTheme.typography.labelMedium,
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.primary
                 )
             }
@@ -250,36 +262,50 @@ private fun HabitRow(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp)
             )
+            Spacer(modifier = Modifier.height(10.dp))
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = stringResource(R.string.habit_streak, item.currentStreak),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Filled.Whatshot,
+                            contentDescription = null,
+                            tint = androidx.compose.ui.graphics.Color(0xFFFF9F43),
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "${item.currentStreak} hari",
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
+                        )
+                    }
                     Text(
                         text = stringResource(R.string.habit_best_streak, item.bestStreak),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                if (onStartTimer != null) {
-                    NeoOutlinedButton(
-                        text = stringResource(R.string.habit_start_timer),
-                        onClick = onStartTimer
-                    )
-                }
-                if (item.canRestore) {
-                    NeoOutlinedButton(
-                        text = stringResource(R.string.habit_restore, remainingRestores),
-                        onClick = onRestore,
-                        enabled = remainingRestores > 0
-                    )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (onStartTimer != null) {
+                        NeoOutlinedButton(
+                            text = stringResource(R.string.habit_start_timer),
+                            onClick = onStartTimer,
+                            fullWidth = false,
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                        )
+                    }
+                    if (item.canRestore) {
+                        NeoOutlinedButton(
+                            text = stringResource(R.string.habit_restore, remainingRestores),
+                            onClick = onRestore,
+                            enabled = remainingRestores > 0,
+                            fullWidth = false,
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+                        )
+                    }
                 }
             }
         }

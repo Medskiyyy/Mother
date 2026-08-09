@@ -40,43 +40,38 @@ class ReminderReceiver : BroadcastReceiver() {
     private fun handleRing(context: Context, ownerType: String, ownerId: String, reminderId: String) {
         val pending = goAsync()
         val container = (context.applicationContext as MotherApplication).container
-
-        // Acquire a WakeLock to guarantee the device stays awake during alarm launch
-        val powerManager = context.getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
-        val wakeLock = powerManager.newWakeLock(
-            android.os.PowerManager.FULL_WAKE_LOCK or
-                    android.os.PowerManager.ACQUIRE_CAUSES_WAKEUP or
-                    android.os.PowerManager.ON_AFTER_RELEASE,
-            "Mother:AlarmWakeLock"
-        )
-        wakeLock.acquire(60_000L) // 60 seconds max
-
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val title = loadTitle(container.reminderRepository, container, ownerType, ownerId)
                 if (ownerType == ReminderScheduler.OWNER_HABIT) {
-                    val alarmIntent = Intent(context, AlarmActivity::class.java).apply {
+                    // Start foreground service -- this is the ONLY reliable way to
+                    // show a full-screen alarm on Android 10+. Direct startActivity
+                    // from a BroadcastReceiver is blocked by the system.
+                    val serviceIntent = Intent(context, HabitAlarmService::class.java).apply {
                         putExtra(ReminderScheduler.EXTRA_OWNER_TYPE, ownerType)
                         putExtra(ReminderScheduler.EXTRA_OWNER_ID, ownerId)
                         putExtra(ReminderScheduler.EXTRA_REMINDER_ID, reminderId)
                         putExtra("title", title)
-                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
                     }
-                    context.startActivity(alarmIntent)
-
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                        context.startForegroundService(serviceIntent)
+                    } else {
+                        context.startService(serviceIntent)
+                    }
                     // Re-schedule for the next day since setAlarmClock is one-shot
                     val nextTrigger = System.currentTimeMillis() + android.app.AlarmManager.INTERVAL_DAY
                     ReminderScheduler.schedule(context, ownerType, ownerId, reminderId, nextTrigger)
+                } else {
+                    // Non-habit: standard notification only
+                    val notificationManager =
+                        context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                    ensureChannel(notificationManager, context)
+                    notificationManager.notify(
+                        ReminderScheduler.requestCode(reminderId),
+                        buildNotification(context, ownerType, ownerId, reminderId, title)
+                    )
                 }
-                val notificationManager =
-                    context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-                ensureChannel(notificationManager, context)
-                notificationManager.notify(
-                    ReminderScheduler.requestCode(reminderId),
-                    buildNotification(context, ownerType, ownerId, reminderId, title)
-                )
             } finally {
-                try { wakeLock.release() } catch (_: Exception) {}
                 pending.finish()
             }
         }

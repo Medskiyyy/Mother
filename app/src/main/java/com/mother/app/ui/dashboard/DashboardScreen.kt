@@ -69,14 +69,16 @@ fun DashboardScreen(
     onStartTimer: () -> Unit,
     onSearch: () -> Unit,
     onEditTask: ((String) -> Unit)? = null,
-    onEditSchedule: ((String) -> Unit)? = null
+    onEditSchedule: ((String) -> Unit)? = null,
+    onAddTask: (() -> Unit)? = null,
+    onAddSchedule: (() -> Unit)? = null
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     when {
         state.isLoading -> LoadingState()
         state.error != null -> ErrorState(description = state.error!!, onRetry = { viewModel.refresh() })
-        else -> DashboardContent(state, onStartTimer, onSearch, onEditTask, onEditSchedule)
+        else -> DashboardContent(state, onStartTimer, onSearch, onEditTask, onEditSchedule, onAddTask, onAddSchedule)
     }
 }
 
@@ -86,7 +88,9 @@ private fun DashboardContent(
     onStartTimer: () -> Unit,
     onSearch: () -> Unit,
     onEditTask: ((String) -> Unit)? = null,
-    onEditSchedule: ((String) -> Unit)? = null
+    onEditSchedule: ((String) -> Unit)? = null,
+    onAddTask: (() -> Unit)? = null,
+    onAddSchedule: (() -> Unit)? = null
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -130,7 +134,11 @@ private fun DashboardContent(
             }
         }
         item {
-            QuickActions(onStartTimer)
+            QuickActions(
+                onStartTimer = onStartTimer,
+                onAddTask = { onAddTask?.invoke() },
+                onAddSchedule = { onAddSchedule?.invoke() }
+            )
         }
     }
 }
@@ -461,7 +469,11 @@ private fun ScheduleRow(schedule: ScheduleEntity, onClick: () -> Unit = {}) {
 }
 
 @Composable
-private fun QuickActions(onStartTimer: () -> Unit) {
+private fun QuickActions(
+    onStartTimer: () -> Unit,
+    onAddTask: () -> Unit,
+    onAddSchedule: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -472,12 +484,14 @@ private fun QuickActions(onStartTimer: () -> Unit) {
         QuickActionButton(
             stringResource(R.string.dashboard_quick_add_task),
             Icons.Filled.Add,
-            Modifier.weight(1f).fillMaxSize()
+            Modifier.weight(1f).fillMaxSize(),
+            onClick = onAddTask
         )
         QuickActionButton(
             stringResource(R.string.dashboard_quick_add_schedule),
             Icons.AutoMirrored.Filled.EventNote,
-            Modifier.weight(1f).fillMaxSize()
+            Modifier.weight(1f).fillMaxSize(),
+            onClick = onAddSchedule
         )
         QuickActionButton(
             stringResource(R.string.dashboard_quick_start_timer),

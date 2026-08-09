@@ -381,21 +381,27 @@ private fun PomodoroRunning(state: PomodoroUiState, viewModel: PomodoroViewModel
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(Modifier.height(24.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
             if (state.paused) {
                 NeoButton(
                     text = stringResource(R.string.action_resume),
-                    onClick = viewModel::resume
+                    onClick = viewModel::resume,
+                    modifier = Modifier.weight(1f)
                 )
             } else {
                 NeoOutlinedButton(
                     text = stringResource(R.string.action_pause),
-                    onClick = viewModel::pause
+                    onClick = viewModel::pause,
+                    modifier = Modifier.weight(1f)
                 )
             }
             NeoOutlinedButton(
                 text = stringResource(R.string.pomodoro_reset),
-                onClick = viewModel::reset
+                onClick = viewModel::reset,
+                modifier = Modifier.weight(1f)
             )
         }
     }

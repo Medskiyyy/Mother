@@ -16,8 +16,8 @@ data class ActiveTimer(
     val phase: TimerPhase,
     /** Epoch millis when the current run segment started (0 while paused). */
     val segmentStart: Long,
-    /** Minutes accumulated across segments before the current one. */
-    val accumulatedMinute: Long
+    /** Milliseconds accumulated across segments before the current one. */
+    val accumulatedMillis: Long
 )
 
 /**
@@ -34,7 +34,7 @@ object ActiveTimerStore {
     private const val KEY_TARGET_MINUTE = "targetMinute"
     private const val KEY_PHASE = "phase"
     private const val KEY_SEGMENT_START = "segmentStart"
-    private const val KEY_ACCUMULATED = "accumulatedMinute"
+    private const val KEY_ACCUMULATED_MILLIS = "accumulatedMillis"
 
     private val _activeTimer = MutableStateFlow<ActiveTimer?>(null)
     /** The single active timer; null when idle. */
@@ -56,7 +56,7 @@ object ActiveTimerStore {
             targetMinute = preferences.getInt(KEY_TARGET_MINUTE, 0),
             phase = phase,
             segmentStart = preferences.getLong(KEY_SEGMENT_START, 0L),
-            accumulatedMinute = preferences.getLong(KEY_ACCUMULATED, 0L)
+            accumulatedMillis = preferences.getLong(KEY_ACCUMULATED_MILLIS, 0L)
         )
     }
 
@@ -67,7 +67,8 @@ object ActiveTimerStore {
     fun pause(now: Long = System.currentTimeMillis()) {
         val current = _activeTimer.value ?: return
         if (current.phase != TimerPhase.RUNNING) return
-        set(current.copy(phase = TimerPhase.PAUSED, segmentStart = 0L, accumulatedMinute = elapsedMinute(now)))
+        val totalMillis = elapsedMillis(now)
+        set(current.copy(phase = TimerPhase.PAUSED, segmentStart = 0L, accumulatedMillis = totalMillis))
     }
 
     fun resume(now: Long = System.currentTimeMillis()) {
@@ -84,11 +85,16 @@ object ActiveTimerStore {
         return minutes to current
     }
 
+    /** Elapsed total milliseconds including the running segment. */
+    fun elapsedMillis(now: Long = System.currentTimeMillis()): Long {
+        val current = _activeTimer.value ?: return 0L
+        val segment = if (current.phase == TimerPhase.RUNNING) (now - current.segmentStart).coerceAtLeast(0L) else 0L
+        return current.accumulatedMillis + segment
+    }
+
     /** Elapsed whole minutes including the running segment. */
     fun elapsedMinute(now: Long = System.currentTimeMillis()): Long {
-        val current = _activeTimer.value ?: return 0L
-        val segment = if (current.phase == TimerPhase.RUNNING) now - current.segmentStart else 0L
-        return current.accumulatedMinute + segment / 60_000L
+        return elapsedMillis(now) / 60_000L
     }
 
     /** Remaining minutes toward the habit's daily target, floored at zero. */
@@ -110,7 +116,7 @@ object ActiveTimerStore {
             ?.putInt(KEY_TARGET_MINUTE, timer.targetMinute)
             ?.putString(KEY_PHASE, timer.phase.name)
             ?.putLong(KEY_SEGMENT_START, timer.segmentStart)
-            ?.putLong(KEY_ACCUMULATED, timer.accumulatedMinute)
+            ?.putLong(KEY_ACCUMULATED_MILLIS, timer.accumulatedMillis)
             ?.apply()
     }
 }

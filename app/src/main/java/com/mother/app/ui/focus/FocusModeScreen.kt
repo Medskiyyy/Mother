@@ -89,13 +89,8 @@ class FocusModeViewModel(
             _uiState.update { FocusModeUiState() }
             return
         }
-        val segmentSeconds = if (timer.phase == TimerPhase.RUNNING) {
-            (now - timer.segmentStart).coerceAtLeast(0L) / 1000L
-        } else {
-            0L
-        }
-        val accumulatedSeconds = timer.accumulatedMinute * 60L
-        val totalSeconds = accumulatedSeconds + segmentSeconds
+        val elapsedMillis = ActiveTimerStore.elapsedMillis(now)
+        val totalSeconds = elapsedMillis / 1000L
         val elapsedMinute = totalSeconds / 60L
         val target = timer.targetMinute.coerceAtLeast(1)
         _uiState.update {
@@ -234,17 +229,20 @@ fun FocusModeScreen(
                 if (state.phase == TimerPhase.RUNNING) {
                     NeoOutlinedButton(
                         text = stringResource(R.string.action_pause),
-                        onClick = viewModel::pause
+                        onClick = viewModel::pause,
+                        modifier = Modifier.weight(1f)
                     )
                 } else if (state.phase == TimerPhase.PAUSED) {
                     NeoButton(
                         text = stringResource(R.string.action_resume),
-                        onClick = viewModel::resume
+                        onClick = viewModel::resume,
+                        modifier = Modifier.weight(1f)
                     )
                 }
                 NeoButton(
                     text = stringResource(R.string.action_stop),
-                    onClick = { viewModel.stop(onDone = onExit) }
+                    onClick = { viewModel.stop(onDone = onExit) },
+                    modifier = Modifier.weight(1f)
                 )
             }
         }

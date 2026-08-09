@@ -360,7 +360,9 @@ class MainActivity : ComponentActivity() {
                         onStartTimer = openTimerOrStart,
                         onSearch = { navController.navigate(Routes.SEARCH) },
                         onEditTask = { taskId -> navController.navigate(Routes.editTask(taskId)) },
-                        onEditSchedule = { scheduleId -> navController.navigate(Routes.editSchedule(scheduleId)) }
+                        onEditSchedule = { scheduleId -> navController.navigate(Routes.editSchedule(scheduleId)) },
+                        onAddTask = { navController.navigate(Routes.CREATE_TASK) },
+                        onAddSchedule = { navController.navigate(Routes.CREATE_SCHEDULE) }
                     )
                 }
                 composable(TopLevelDestination.Calendar.route) {
