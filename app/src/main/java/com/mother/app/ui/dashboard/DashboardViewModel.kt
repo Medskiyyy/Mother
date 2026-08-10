@@ -44,7 +44,6 @@ data class DashboardUiState(
     val streak: Int = 0,
     val todayStudyMinutes: Int = 0,
     val dailyTargetMinutes: Int = 120,
-    val nextActivity: ScheduleEntity? = null,
     val deadlines: List<TaskEntity> = emptyList(),
     val todaySchedule: List<ScheduleEntity> = emptyList()
 )
@@ -129,7 +128,6 @@ class DashboardViewModel(
                 val dayEndMs = TimeUtils.endOfDay(dayStartMs)
 
                 val todaySchedules = data.schedules.filter { it.startTime in dayStartMs..<dayEndMs }
-                val nextAct = data.schedules.firstOrNull { it.endTime > currentTime }
 
                 DashboardUiState(
                     isLoading = false,
@@ -139,7 +137,6 @@ class DashboardViewModel(
                     streak = TimeUtils.computeStreak(data.sessions.map { it.startTime }),
                     todayStudyMinutes = data.studyMin,
                     dailyTargetMinutes = targetMinutes,
-                    nextActivity = nextAct,
                     deadlines = data.deadlines,
                     todaySchedule = todaySchedules
                 )

@@ -107,9 +107,6 @@ private fun DashboardContent(
             TargetCard(state.todayStudyMinutes, state.dailyTargetMinutes)
         }
         item {
-            NextActivityCard(state.nextActivity, onStartTimer)
-        }
-        item {
             SectionTitle(stringResource(R.string.dashboard_deadlines))
         }
         if (state.deadlines.isEmpty()) {
@@ -288,55 +285,6 @@ private fun TargetCard(currentMinutes: Int, targetMinutes: Int) {
                         .height(14.dp)
                         .clip(RoundedCornerShape(7.dp))
                         .background(MaterialTheme.colorScheme.primary)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun NextActivityCard(schedule: ScheduleEntity?, onStartTimer: () -> Unit) {
-    NeoCard(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(R.string.dashboard_next_activity).uppercase(),
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Black,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    letterSpacing = 0.5.sp
-                )
-                Spacer(Modifier.height(4.dp))
-                if (schedule == null) {
-                    Text(
-                        text = stringResource(R.string.dashboard_next_activity_empty),
-                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                } else {
-                    Text(
-                        text = schedule.title,
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = TimeUtils.formatTime(schedule.startTime),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-            if (schedule != null) {
-                Spacer(Modifier.width(8.dp))
-                NeoOutlinedButton(
-                    text = stringResource(R.string.dashboard_start),
-                    onClick = onStartTimer
                 )
             }
         }
