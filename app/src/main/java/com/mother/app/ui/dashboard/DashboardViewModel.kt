@@ -123,7 +123,7 @@ class DashboardViewModel(
 
         viewModelScope.launch {
             combine(dataFlow, tick) { data, currentTime ->
-                val habitTargetSum = data.activeHabits.sumOf { it.targetMinute }
+                val habitTargetSum = data.activeHabits.filter { it.targetMinute > 0 }.sumOf { it.targetMinute }
                 val targetMinutes = if (habitTargetSum > 0) habitTargetSum else (data.setting?.defaultStudyTargetMinute ?: 120)
 
                 DashboardUiState(

@@ -171,7 +171,7 @@ class CreateHabitViewModel(
         val state = _uiState.value
         val titleBlank = state.title.isBlank()
         val target = state.targetMinute.toIntOrNull() ?: 0
-        val targetInvalid = target <= 0
+        val targetInvalid = target < 0
         val categoryMissing = state.categoryId == null
         if (titleBlank || targetInvalid || categoryMissing) {
             _uiState.update {
@@ -334,10 +334,14 @@ fun CreateHabitScreen(
             OutlinedTextField(
                 value = state.targetMinute,
                 onValueChange = viewModel::onTargetChange,
-                label = { Text(stringResource(R.string.field_target_minutes)) },
+                label = { Text("Target (menit) - Opsional") },
                 isError = state.targetError,
                 supportingText = {
-                    if (state.targetError) Text(stringResource(R.string.error_target_positive))
+                    if (state.targetError) {
+                        Text(stringResource(R.string.error_target_positive))
+                    } else {
+                        Text("Kosongkan atau isi 0 jika hanya pengingat rutinitas")
+                    }
                 },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true,

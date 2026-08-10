@@ -28,10 +28,10 @@ class HabitRepositoryImpl(private val dao: HabitDao) : HabitRepository {
         if (habit.title.isBlank()) {
             throw ValidationException(ValidationException.Code.BLANK_TITLE, "Judul wajib diisi.")
         }
-        if (habit.targetMinute <= 0) {
+        if (habit.targetMinute < 0) {
             throw ValidationException(
                 ValidationException.Code.NON_POSITIVE_TARGET,
-                "Target harus lebih dari nol."
+                "Target tidak boleh negatif."
             )
         }
         dao.upsert(habit.copy(title = habit.title.trim(), updatedAt = System.currentTimeMillis()))

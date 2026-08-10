@@ -218,12 +218,17 @@ private fun HabitRow(
     onStartTimer: (() -> Unit)? = null,
     onClick: () -> Unit = {}
 ) {
+    val isRoutineOnly = item.habit.targetMinute == 0
     val target = item.habit.targetMinute.coerceAtLeast(1)
     val progress = (item.todayMinutes.toFloat() / target).coerceIn(0f, 1f)
-    val statusLabel = when (item.dayStatus) {
-        HabitStats.DayStatus.NOT_STARTED -> stringResource(R.string.habit_status_not_started)
-        HabitStats.DayStatus.IN_PROGRESS -> stringResource(R.string.habit_status_in_progress)
-        HabitStats.DayStatus.COMPLETED -> stringResource(R.string.habit_status_completed)
+    val statusLabel = if (isRoutineOnly) {
+        if (item.todayMinutes > 0) stringResource(R.string.habit_status_completed) else "Pengingat Rutinitas"
+    } else {
+        when (item.dayStatus) {
+            HabitStats.DayStatus.NOT_STARTED -> stringResource(R.string.habit_status_not_started)
+            HabitStats.DayStatus.IN_PROGRESS -> stringResource(R.string.habit_status_in_progress)
+            HabitStats.DayStatus.COMPLETED -> stringResource(R.string.habit_status_completed)
+        }
     }
     NeoCard(
         modifier = Modifier.fillMaxWidth(),
@@ -250,18 +255,20 @@ private fun HabitRow(
                     color = MaterialTheme.colorScheme.primary
                 )
             }
-            LinearProgressIndicator(
-                progress = { progress },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp)
-            )
-            Text(
-                text = "${TimeUtils.formatDurationCompact(item.todayMinutes)} / ${TimeUtils.formatDurationCompact(target)}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 4.dp)
-            )
+            if (!isRoutineOnly) {
+                LinearProgressIndicator(
+                    progress = { progress },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp)
+                )
+                Text(
+                    text = "${TimeUtils.formatDurationCompact(item.todayMinutes)} / ${TimeUtils.formatDurationCompact(target)}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
             Spacer(modifier = Modifier.height(10.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
