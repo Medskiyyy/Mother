@@ -172,15 +172,25 @@ class HabitAlarmService : Service() {
     }
 
     private fun stopAlarm() {
-        try {
-            mediaPlayer?.stop()
+        runCatching {
+            if (mediaPlayer?.isPlaying == true) {
+                mediaPlayer?.stop()
+            }
+        }
+        runCatching {
             mediaPlayer?.release()
-            mediaPlayer = null
+        }
+        mediaPlayer = null
+
+        runCatching {
             vibrator?.cancel()
-            vibrator = null
+        }
+        vibrator = null
+
+        runCatching {
             wakeLock?.let { if (it.isHeld) it.release() }
-            wakeLock = null
-        } catch (_: Exception) {}
+        }
+        wakeLock = null
     }
 
     override fun onDestroy() {

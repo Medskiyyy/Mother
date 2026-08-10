@@ -58,8 +58,22 @@ class ReminderReceiver : BroadcastReceiver() {
                     } else {
                         context.startService(serviceIntent)
                     }
-                    // Re-schedule for the next day since setAlarmClock is one-shot
-                    val nextTrigger = System.currentTimeMillis() + android.app.AlarmManager.INTERVAL_DAY
+                    // Re-schedule for the next day preserving exact wall-clock time
+                    val habitReminder = container.reminderRepository.getHabitReminder(reminderId)
+                    val nextTrigger = if (habitReminder != null) {
+                        val cal = java.util.Calendar.getInstance().apply {
+                            timeInMillis = habitReminder.triggerTime
+                            while (timeInMillis <= System.currentTimeMillis()) {
+                                add(java.util.Calendar.DAY_OF_YEAR, 1)
+                            }
+                        }
+                        cal.timeInMillis
+                    } else {
+                        System.currentTimeMillis() + android.app.AlarmManager.INTERVAL_DAY
+                    }
+                    if (habitReminder != null) {
+                        container.reminderRepository.upsertHabitReminder(habitReminder.copy(triggerTime = nextTrigger))
+                    }
                     ReminderScheduler.schedule(context, ownerType, ownerId, reminderId, nextTrigger)
                 } else {
                     // Non-habit: standard notification only
@@ -259,7 +273,6 @@ class ReminderReceiver : BroadcastReceiver() {
 class BootReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
-        if (intent.action != Intent.ACTION_BOOT_COMPLETED) return
         val pending = goAsync()
         val container = (context.applicationContext as MotherApplication).container
         CoroutineScope(Dispatchers.IO).launch {
@@ -288,14 +301,25 @@ class BootReceiver : BroadcastReceiver() {
                         )
                     }
                 container.reminderRepository.getAllHabitReminders()
-                    .filter { it.enabled && it.triggerTime > now }
-                    .forEach {
+                    .filter { it.enabled }
+                    .forEach { reminder ->
+                        var targetTime = reminder.triggerTime
+                        if (targetTime <= now) {
+                            val cal = java.util.Calendar.getInstance().apply {
+                                timeInMillis = targetTime
+                                while (timeInMillis <= now) {
+                                    add(java.util.Calendar.DAY_OF_YEAR, 1)
+                                }
+                            }
+                            targetTime = cal.timeInMillis
+                            container.reminderRepository.upsertHabitReminder(reminder.copy(triggerTime = targetTime))
+                        }
                         ReminderScheduler.schedule(
                             context,
                             ReminderScheduler.OWNER_HABIT,
-                            it.habitId,
-                            it.id,
-                            it.triggerTime
+                            reminder.habitId,
+                            reminder.id,
+                            targetTime
                         )
                     }
             } finally {

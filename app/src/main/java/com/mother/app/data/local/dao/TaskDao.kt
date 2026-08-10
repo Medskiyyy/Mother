@@ -1,9 +1,8 @@
 package com.mother.app.data.local.dao
 
 import androidx.room.Dao
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Upsert
 import com.mother.app.data.local.entity.TaskEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -34,7 +33,7 @@ interface TaskDao {
     @Query("SELECT * FROM task WHERE id = :id")
     suspend fun getById(id: String): TaskEntity?
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Upsert
     suspend fun upsert(task: TaskEntity)
 
     @Query("DELETE FROM task WHERE id = :id")

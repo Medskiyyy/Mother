@@ -71,26 +71,27 @@ class ProgressStatisticsCalculator {
         val sessionsByHabitDay = sessionsInWindow.groupBy {
             it.habitId to TimeUtils.startOfDay(it.startTime)
         }.mapValues { (_, list) -> list.sumOf { it.durationMinute } }
+        val todayStart = TimeUtils.todayStart()
         for (habit in habits) {
             val createdDay = TimeUtils.startOfDay(habit.createdAt)
             var day = maxOf(createdDay, windowStart).let { TimeUtils.startOfDay(it) }
-            val windowEndDayStart = TimeUtils.startOfDay(windowEnd - 1)
-            while (day <= windowEndDayStart && day < now) {
+            val windowEndDayStart = TimeUtils.startOfDay((windowEnd - 1).coerceAtLeast(0L))
+            while (day <= windowEndDayStart && day < todayStart) {
                 val minutes = sessionsByHabitDay[habit.id to day] ?: 0
                 if (minutes >= habit.targetMinute) habitsCompletedDays++ else habitsMissedDays++
                 day = TimeUtils.plusDays(day, 1)
             }
         }
 
-        val sessionStarts = sessionsInWindow.map { it.startTime }
+        val allSessionStarts = sessions.filter { it.startTime < windowEnd }.map { it.startTime }
         return ProgressStatistics(
             totalStudyMinutes = totalStudyMinutes,
             totalSessions = totalSessions,
             averageSessionMinutes = averageSessionMinutes,
             habitsCompletedDays = habitsCompletedDays,
             habitsMissedDays = habitsMissedDays,
-            currentStreak = TimeUtils.computeStreak(sessionStarts),
-            bestStreak = TimeUtils.computeBestStreak(sessionStarts),
+            currentStreak = TimeUtils.computeStreak(allSessionStarts),
+            bestStreak = TimeUtils.computeBestStreak(allSessionStarts),
             totalTasks = tasksInWindow.size,
             completedTasks = completedTasks,
             overdueTasks = overdueTasks,

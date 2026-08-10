@@ -1,9 +1,8 @@
 package com.mother.app.data.local.dao
 
 import androidx.room.Dao
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Upsert
 import com.mother.app.data.local.entity.HabitReminderEntity
 import com.mother.app.data.local.entity.ScheduleReminderEntity
 import com.mother.app.data.local.entity.TaskReminderEntity
@@ -26,7 +25,7 @@ interface TaskReminderDao {
     @Query("SELECT * FROM task_reminder")
     suspend fun getAll(): List<TaskReminderEntity>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Upsert
     suspend fun upsert(reminder: TaskReminderEntity)
 
     @Query("DELETE FROM task_reminder WHERE taskId = :taskId")
@@ -48,7 +47,7 @@ interface ScheduleReminderDao {
     @Query("SELECT * FROM schedule_reminder")
     suspend fun getAll(): List<ScheduleReminderEntity>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Upsert
     suspend fun upsert(reminder: ScheduleReminderEntity)
 
     @Query("DELETE FROM schedule_reminder WHERE scheduleId = :scheduleId")
@@ -70,7 +69,7 @@ interface HabitReminderDao {
     @Query("SELECT * FROM habit_reminder")
     suspend fun getAll(): List<HabitReminderEntity>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Upsert
     suspend fun upsert(reminder: HabitReminderEntity)
 
     @Query("DELETE FROM habit_reminder WHERE habitId = :habitId")

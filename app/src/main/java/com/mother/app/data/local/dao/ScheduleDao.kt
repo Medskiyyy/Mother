@@ -1,9 +1,8 @@
 package com.mother.app.data.local.dao
 
 import androidx.room.Dao
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Upsert
 import com.mother.app.data.local.entity.ScheduleEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -35,7 +34,7 @@ interface ScheduleDao {
     @Query("SELECT * FROM schedule WHERE id = :id")
     suspend fun getById(id: String): ScheduleEntity?
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Upsert
     suspend fun upsert(schedule: ScheduleEntity)
 
     @Query("DELETE FROM schedule WHERE id = :id")

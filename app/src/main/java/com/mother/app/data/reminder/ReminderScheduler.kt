@@ -53,7 +53,7 @@ object ReminderScheduler {
         val alarmManager = context.getSystemService<AlarmManager>() ?: return
         val pendingIntent = buildPendingIntent(context, ownerType, ownerId, reminderId)
         val showIntent = PendingIntent.getActivity(
-            context, 0,
+            context, requestCode(reminderId),
             Intent(context, AlarmActivity::class.java),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )

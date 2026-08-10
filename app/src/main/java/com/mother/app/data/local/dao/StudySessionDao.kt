@@ -1,9 +1,8 @@
 package com.mother.app.data.local.dao
 
 import androidx.room.Dao
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Upsert
 import com.mother.app.data.local.entity.StudySessionEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -25,7 +24,7 @@ interface StudySessionDao {
     @Query("SELECT * FROM study_session WHERE id = :id")
     suspend fun getById(id: String): StudySessionEntity?
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Upsert
     suspend fun upsert(session: StudySessionEntity)
 
     @Query("DELETE FROM study_session WHERE id = :id")

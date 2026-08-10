@@ -152,6 +152,16 @@ class CreateHabitViewModel(
     fun deleteHabit() {
         if (habitId == null) return
         viewModelScope.launch {
+            val oldReminders = reminderRepository.getAllHabitReminders().filter { it.habitId == habitId }
+            oldReminders.forEach { old ->
+                ReminderScheduler.cancel(
+                    context,
+                    ReminderScheduler.OWNER_HABIT,
+                    habitId,
+                    old.id
+                )
+            }
+            reminderRepository.deleteHabitReminders(habitId)
             habitRepository.deleteById(habitId)
             onSaved()
         }
@@ -179,6 +189,9 @@ class CreateHabitViewModel(
             try {
                 val now = System.currentTimeMillis()
                 val targetId = habitId ?: UUID.randomUUID().toString()
+                val existingHabit = if (habitId != null) habitRepository.getById(habitId) else null
+                val createdAt = existingHabit?.createdAt ?: now
+
                 habitRepository.upsert(
                     HabitEntity(
                         id = targetId,
@@ -191,11 +204,23 @@ class CreateHabitViewModel(
                         color = category?.color ?: "#FF9F43",
                         icon = category?.icon ?: "tag",
                         note = null,
-                        archived = false,
-                        createdAt = now,
+                        archived = existingHabit?.archived ?: false,
+                        createdAt = createdAt,
                         updatedAt = now
                     )
                 )
+
+                // Clean up existing alarms and reminders before saving updated ones
+                val oldReminders = reminderRepository.getAllHabitReminders().filter { it.habitId == targetId }
+                oldReminders.forEach { old ->
+                    ReminderScheduler.cancel(
+                        context,
+                        ReminderScheduler.OWNER_HABIT,
+                        targetId,
+                        old.id
+                    )
+                }
+                reminderRepository.deleteHabitReminders(targetId)
 
                 // Save multiple reminders and schedule exact alarms for each
                 state.reminderTimes.forEach { time ->
