@@ -94,7 +94,7 @@ object ReminderScheduler {
             ownerType,
             ownerId,
             reminderId,
-            flags = PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_UPDATE_CURRENT
+            flags = PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
         )
         if (pendingIntent != null) {
             alarmManager.cancel(pendingIntent)
