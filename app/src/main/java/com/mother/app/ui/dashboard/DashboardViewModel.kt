@@ -9,9 +9,11 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.mother.app.R
 import com.mother.app.data.local.entity.AppSettingEntity
+import com.mother.app.data.local.entity.HabitEntity
 import com.mother.app.data.local.entity.ScheduleEntity
 import com.mother.app.data.local.entity.StudySessionEntity
 import com.mother.app.data.local.entity.TaskEntity
+import com.mother.app.data.repository.HabitRepository
 import com.mother.app.data.repository.ScheduleRepository
 import com.mother.app.data.repository.SettingRepository
 import com.mother.app.data.repository.StudySessionRepository
@@ -47,13 +49,14 @@ data class DashboardUiState(
     val todaySchedule: List<ScheduleEntity> = emptyList()
 )
 
-/** Typed holder combining the five data flows feeding the dashboard. */
+/** Typed holder combining the data flows feeding the dashboard. */
 private data class DashboardData(
     val studyMin: Int,
     val schedules: List<ScheduleEntity>,
     val deadlines: List<TaskEntity>,
     val setting: AppSettingEntity?,
-    val sessions: List<StudySessionEntity>
+    val sessions: List<StudySessionEntity>,
+    val activeHabits: List<HabitEntity>
 )
 
 /**
@@ -67,7 +70,8 @@ class DashboardViewModel(
     private val scheduleRepository: ScheduleRepository,
     private val taskRepository: TaskRepository,
     private val studySessionRepository: StudySessionRepository,
-    private val settingRepository: SettingRepository
+    private val settingRepository: SettingRepository,
+    private val habitRepository: HabitRepository
 ) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
@@ -99,9 +103,18 @@ class DashboardViewModel(
                     scheduleRepository.observeForDay(start, end),
                     taskRepository.observeUpcomingDeadlines(3),
                     settingRepository.observeSetting(),
-                    studySessionRepository.observeAllAsc()
-                ) { studyMin, schedules, deadlines, setting, sessions ->
-                    DashboardData(studyMin, schedules, deadlines, setting, sessions)
+                    studySessionRepository.observeAllAsc(),
+                    habitRepository.observeActive()
+                ) { flows ->
+                    @Suppress("UNCHECKED_CAST")
+                    DashboardData(
+                        studyMin = flows[0] as Int,
+                        schedules = flows[1] as List<ScheduleEntity>,
+                        deadlines = flows[2] as List<TaskEntity>,
+                        setting = flows[3] as AppSettingEntity?,
+                        sessions = flows[4] as List<StudySessionEntity>,
+                        activeHabits = flows[5] as List<HabitEntity>
+                    )
                 }
             }
             .catch { e ->
@@ -110,6 +123,9 @@ class DashboardViewModel(
 
         viewModelScope.launch {
             combine(dataFlow, tick) { data, currentTime ->
+                val habitTargetSum = data.activeHabits.sumOf { it.targetMinute }
+                val targetMinutes = if (habitTargetSum > 0) habitTargetSum else (data.setting?.defaultStudyTargetMinute ?: 120)
+
                 DashboardUiState(
                     isLoading = false,
                     error = null,
@@ -117,7 +133,7 @@ class DashboardViewModel(
                     dateLabel = TimeUtils.formatFullDate(currentTime),
                     streak = TimeUtils.computeStreak(data.sessions.map { it.startTime }),
                     todayStudyMinutes = data.studyMin,
-                    dailyTargetMinutes = data.setting?.defaultStudyTargetMinute ?: 120,
+                    dailyTargetMinutes = targetMinutes,
                     nextActivity = data.schedules.firstOrNull { it.startTime > currentTime },
                     deadlines = data.deadlines,
                     todaySchedule = data.schedules
@@ -154,7 +170,8 @@ class DashboardViewModel(
                     scheduleRepository = container.scheduleRepository,
                     taskRepository = container.taskRepository,
                     studySessionRepository = container.studySessionRepository,
-                    settingRepository = container.settingRepository
+                    settingRepository = container.settingRepository,
+                    habitRepository = container.habitRepository
                 )
             }
         }
