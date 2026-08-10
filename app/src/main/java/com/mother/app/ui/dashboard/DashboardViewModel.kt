@@ -100,7 +100,7 @@ class DashboardViewModel(
                 val end = TimeUtils.endOfDay(start)
                 combine(
                     studySessionRepository.observeTotalMinutesRange(start, end),
-                    scheduleRepository.observeForDay(start, end),
+                    scheduleRepository.observeAll(),
                     taskRepository.observeUpcomingDeadlines(3),
                     settingRepository.observeSetting(),
                     studySessionRepository.observeAllAsc(),
@@ -125,6 +125,11 @@ class DashboardViewModel(
             combine(dataFlow, tick) { data, currentTime ->
                 val habitTargetSum = data.activeHabits.filter { it.targetMinute > 0 }.sumOf { it.targetMinute }
                 val targetMinutes = if (habitTargetSum > 0) habitTargetSum else (data.setting?.defaultStudyTargetMinute ?: 120)
+                val dayStartMs = TimeUtils.startOfDay(currentTime)
+                val dayEndMs = TimeUtils.endOfDay(dayStartMs)
+
+                val todaySchedules = data.schedules.filter { it.startTime in dayStartMs..<dayEndMs }
+                val nextAct = data.schedules.firstOrNull { it.endTime > currentTime }
 
                 DashboardUiState(
                     isLoading = false,
@@ -134,9 +139,9 @@ class DashboardViewModel(
                     streak = TimeUtils.computeStreak(data.sessions.map { it.startTime }),
                     todayStudyMinutes = data.studyMin,
                     dailyTargetMinutes = targetMinutes,
-                    nextActivity = data.schedules.firstOrNull { it.startTime > currentTime },
+                    nextActivity = nextAct,
                     deadlines = data.deadlines,
-                    todaySchedule = data.schedules
+                    todaySchedule = todaySchedules
                 )
             }
                 .catch { e ->
