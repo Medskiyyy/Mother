@@ -45,6 +45,7 @@ import com.mother.app.R
 import com.mother.app.data.local.entity.HabitEntity
 import com.mother.app.data.local.entity.RestoreHistoryEntity
 import com.mother.app.data.local.entity.StudySessionEntity
+import com.mother.app.data.model.SessionSource
 import com.mother.app.data.repository.HabitRepository
 import com.mother.app.data.repository.HabitStats
 import com.mother.app.data.repository.RestoreStreakRepository
@@ -58,7 +59,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.mother.app.ui.components.NeoButton
 import com.mother.app.ui.components.NeoOutlinedButton
+import com.mother.app.ui.theme.PriorityAman
 
 data class HabitProgress(
     val habit: HabitEntity,
@@ -149,6 +152,25 @@ class HabitListViewModel(
         }
     }
 
+    /** Marks a routine habit (targetMinute == 0) as complete for today. */
+    fun markRoutineComplete(habit: HabitEntity) {
+        viewModelScope.launch {
+            val now = System.currentTimeMillis()
+            studySessionRepository.upsert(
+                StudySessionEntity(
+                    id = java.util.UUID.randomUUID().toString(),
+                    habitId = habit.id,
+                    startTime = now,
+                    endTime = now,
+                    durationMinute = 1,
+                    source = SessionSource.MANUAL,
+                    note = "Tandai Selesai Rutinitas",
+                    createdAt = now
+                )
+            )
+        }
+    }
+
     fun dismissError() = _uiState.update { it.copy(errorMessage = null) }
 
     companion object {
@@ -202,6 +224,7 @@ fun HabitListScreen(
                         remainingRestores = state.remainingRestores,
                         onRestore = { viewModel.restoreStreak(item.habit) },
                         onStartTimer = onStartTimer?.let { start -> { start(item.habit) } },
+                        onMarkRoutineComplete = { viewModel.markRoutineComplete(item.habit) },
                         onClick = { onEditHabit?.invoke(item.habit.id) }
                     )
                 }
@@ -216,6 +239,7 @@ private fun HabitRow(
     remainingRestores: Int,
     onRestore: () -> Unit,
     onStartTimer: (() -> Unit)? = null,
+    onMarkRoutineComplete: (() -> Unit)? = null,
     onClick: () -> Unit = {}
 ) {
     val isRoutineOnly = item.habit.targetMinute == 0
@@ -296,7 +320,26 @@ private fun HabitRow(
                     )
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    if (onStartTimer != null) {
+                    if (isRoutineOnly) {
+                        if (item.todayMinutes > 0) {
+                            NeoButton(
+                                text = "✓ Selesai",
+                                onClick = {},
+                                enabled = true,
+                                containerColor = PriorityAman,
+                                contentColor = androidx.compose.ui.graphics.Color(0xFF121212),
+                                fullWidth = false,
+                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                            )
+                        } else if (onMarkRoutineComplete != null) {
+                            NeoOutlinedButton(
+                                text = "Tandai Selesai",
+                                onClick = onMarkRoutineComplete,
+                                fullWidth = false,
+                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                            )
+                        }
+                    } else if (onStartTimer != null) {
                         NeoOutlinedButton(
                             text = stringResource(R.string.habit_start_timer),
                             onClick = onStartTimer,
