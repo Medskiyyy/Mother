@@ -58,6 +58,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.mother.app.data.local.entity.HabitEntity
 import com.mother.app.data.model.Theme
+import com.mother.app.ui.components.ActiveTimerBanner
 import com.mother.app.data.timer.ActiveTimerStore
 import com.mother.app.data.timer.TimerService
 import com.mother.app.ui.dashboard.DashboardScreen
@@ -277,6 +278,9 @@ class MainActivity : ComponentActivity() {
                         tonalElevation = 0.dp
                     ) {
                         Column {
+                            ActiveTimerBanner(
+                                onClick = { navController.navigate(Routes.FOCUS) }
+                            )
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()

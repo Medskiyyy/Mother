@@ -116,10 +116,10 @@ class FocusModeViewModel(
         }
     }
 
-    /** Pauses the timer; the foreground notification is dropped while paused. */
+    /** Pauses the timer; the notification updates to show paused state with resume action. */
     fun pause() {
         ActiveTimerStore.pause()
-        context.stopService(android.content.Intent(context, com.mother.app.data.timer.TimerService::class.java))
+        com.mother.app.data.timer.TimerService.start(context)
     }
 
     fun resume() {
@@ -130,6 +130,7 @@ class FocusModeViewModel(
     /** Stops the timer and persists the elapsed time as a StudySession (PRD §15). */
     fun stop(onDone: () -> Unit) {
         val stopped = ActiveTimerStore.stop()
+        com.mother.app.data.timer.TimerService.stop(context)
         viewModelScope.launch {
             if (stopped != null) {
                 val minutes = stopped.first
