@@ -124,7 +124,9 @@ fun NeoButton(
                 shape = RoundedCornerShape(10.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = containerColor,
-                    contentColor = contentColor
+                    contentColor = contentColor,
+                    disabledContainerColor = containerColor,
+                    disabledContentColor = contentColor
                 ),
                 border = BorderStroke(2.5.dp, borderColor),
                 contentPadding = contentPadding,
@@ -174,7 +176,9 @@ fun NeoOutlinedButton(
                 shape = RoundedCornerShape(10.dp),
                 colors = ButtonDefaults.outlinedButtonColors(
                     containerColor = containerColor,
-                    contentColor = contentColor
+                    contentColor = contentColor,
+                    disabledContainerColor = containerColor,
+                    disabledContentColor = contentColor
                 ),
                 border = BorderStroke(2.5.dp, borderColor),
                 contentPadding = contentPadding,
