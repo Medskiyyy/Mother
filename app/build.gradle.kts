@@ -13,8 +13,8 @@ android {
         applicationId = "com.mother.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 15
-        versionName = "3.3.5"
+        versionCode = 16
+        versionName = "3.4.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -43,6 +43,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     packaging {
@@ -50,15 +51,10 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
-}
 
-// Ship the built APK as Mother.apk regardless of build type
-tasks.matching { it.name == "packageDebug" || it.name == "packageRelease" }.configureEach {
-    doLast {
-        val variantName = name.removePrefix("package").lowercase()
-        val apkDir = project.layout.buildDirectory.dir("outputs/apk/$variantName").get().asFile
-        apkDir.listFiles { file -> file.extension == "apk" && file.name != "Mother.apk" }?.forEach { apk ->
-            apk.copyTo(File(apkDir, "Mother.apk"), overwrite = true)
+    applicationVariants.all {
+        outputs.all {
+            (this as? com.android.build.gradle.internal.api.BaseVariantOutputImpl)?.outputFileName = "Mother.apk"
         }
     }
 }
@@ -77,6 +73,7 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.6")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.6")
     implementation("androidx.activity:activity-compose:1.9.2")
+    implementation("androidx.media:media:1.7.0")
 
     // Compose
     implementation("androidx.compose.ui:ui")

@@ -299,12 +299,7 @@ private fun BackupCard(lastBackup: Long?, busy: Boolean, onExport: () -> Unit, o
 
 @Composable
 private fun AboutCard() {
-    val context = LocalContext.current
-    val versionName = remember {
-        runCatching {
-            context.packageManager.getPackageInfo(context.packageName, 0).versionName
-        }.getOrNull() ?: "1.0.0"
-    }
+    val versionName = com.mother.app.BuildConfig.VERSION_NAME
     NeoCard(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier
