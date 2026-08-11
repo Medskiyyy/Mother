@@ -1,40 +1,58 @@
 # Mother
 
-Aplikasi pengatur jadwal, tugas, dan kebiasaan harian dengan tampilan Neobrutalism yang tegas dan gampang dipakai. Mother dibuat untuk bantu kamu tetap produktif dan ingat semua prioritas tanpa kerumitan.
+Catat. Fokus. Selesai.
+
+Aplikasi manajemen kebiasaan, tugas, dan waktu fokus untuk kamu yang serius dengan produktivitas. Dibuat dengan desain Neobrutalism yang kontras dan tegas, bukan untuk dipandang tapi untuk dipakai.
 
 ---
 
-## Kenapa Pakai Mother?
+## Fitur
 
-* **Ringkas dan Jelas**: Tampilan kontras tinggi memudahkan kamu langsung fokus ke tugas yang paling penting.
-* **Pengingat Harian**: Setiap kali aplikasi dibuka, ada ringkasan singkat jadwal hari ini dan pesan singkat pembakar semangat.
-* **Fleksibel**: Bebas atur kategori, warna, dan prioritas sesuai gaya kerjamu sendiri.
+### Kebiasaan Harian
 
----
+Lacak kebiasaan setiap hari dan bangun streak tanpa putus. Kalau kamu tipe orang yang mau jadikan mandi pagi, baca buku, atau olahraga sebagai rutinitas tetap, Mother sudah siap.
 
-## Fitur Utama
+- **Streak Tracker**: Lihat berapa hari berturut-turut kamu konsisten. Jangan sampai putus.
+- **Rutinitas Tanpa Timer**: Kebiasaan yang tidak butuh durasi (bangun pagi, solat, minum air) bisa langsung ditandai selesai dengan satu ketukan.
+- **Pemulihan Streak**: Satu hari kelewat tidak harus menghapus semua rekap. Gunakan fitur restore untuk jaga rekormu.
 
-### Manajemen Tugas dan Prioritas
-* **Warna Sesuai Prioritas**: Kartu tugas otomatis berubah warna tergantung seberapa mendesak tenggat waktunya.
-* **Lihat Detail Sekali Ketuk**: Tinggal tekan kartu tugas untuk buka deskripsi lengkapnya.
-* **Edit dan Hapus Cepat**: Bebas ubah atau hapus tugas kapan saja kalau ada perubahan agenda.
+### Timer Fokus
+
+Buka sesi belajar atau kerja dan biarkan Mother melacak waktunya. Timer tetap berjalan walau kamu pindah layar atau keluar aplikasi.
+
+- **Berjalan di Latar Belakang**: Pindah ke layar lain? Timer tidak berhenti.
+- **Banner Aktif**: Selama timer berjalan, ada banner kecil di bagian bawah layar biar kamu tahu sesi masih aktif.
+- **Kontrol dari Notifikasi**: Jeda, lanjutkan, atau hentikan sesi langsung dari notifikasi tanpa harus buka aplikasi.
+- **Kontrol dari Layar Kunci**: Tombol kontrol timer juga muncul di layar kunci HP kamu.
+- **Riwayat Tersimpan Aman**: Waktu yang sudah berjalan otomatis masuk ke riwayat belajar. Tidak ada data yang hilang walaupun timer dihentikan dari luar aplikasi.
+
+### Manajemen Tugas
+
+Buat daftar tugas dengan prioritas yang jelas. Warna kartu berubah otomatis sesuai seberapa mepet tenggat waktunya.
+
+- **Prioritas Visual**: Urgent, Mepet, Waspada, Aman. Langsung kelihatan mana yang harus dikerjakan duluan.
+- **Kategori Kustom**: Buat kategori sendiri sesuai kebutuhanmu, lengkap dengan pilihan warna.
 
 ### Jadwal dan Kalender
-* **Jadwal Harian**: Susun agenda kegiatan dari jam mulai sampai jam selesai.
-* **Kalender Bulanan**: Pantau semua tenggat waktu dan agenda penting dalam satu tampilan kalender.
 
-### Habit Tracker dan Timer Fokus
-* **Lacak Kebiasaan (Streak)**: Catat kebiasaan harian dan kumpulkan rekor hari berturut-turut.
-* **Timer Fokus**: Timer terintegrasi untuk bantu kamu tetap fokus saat belajar atau kerja.
-* **Fitur Pemulihan Streak**: Jaga rekor kebiasaanmu supaya tidak langsung reset kalau sempat terlewat sehari.
+Susun agenda harian dari jam mulai sampai selesai. Pantau semua kegiatan dan tenggat waktu dalam tampilan kalender bulanan.
 
-### Kategori Kustom
-* Buat kategori sendiri (seperti Kuliah, Kerja, atau Hobi) dan pilih warna penandanya sesuai keinginanmu.
+### Statistik dan Progres
 
-### Mode Terang dan Gelap
-* **Mode Terang**: Tampilan krem yang bersih dan nyaman untuk siang hari.
-* **Mode Gelap**: Tampilan serba hitam untuk malam hari yang lebih hemat baterai.
+Lihat berapa lama kamu belajar hari ini, minggu ini, dan bulan ini. Data dari semua sesi timer fokus terekap otomatis.
 
 ---
 
-Bantu kamu tetap teratur dan tuntas mengerjakan target setiap hari.
+## Tampilan
+
+Mother dibuat dengan desain **Neobrutalism**: border tebal, warna solid, bayangan offset, dan tidak ada elemen dekoratif yang tidak berguna. Tersedia mode terang dan mode gelap.
+
+---
+
+## Teknologi
+
+Kotlin, Jetpack Compose, Material 3, Room Database, Kotlin Coroutines dan Flow, Foreground Service dengan Live Notification Chronometer.
+
+---
+
+**Mother v3.4.0**
