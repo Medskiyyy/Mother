@@ -59,7 +59,9 @@ class AppContainer(context: Context) {
 
     /** Flushes WAL pages so a file copy of the database is complete (backup). */
     suspend fun checkpoint() = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-        database.openHelper.writableDatabase.execSQL("PRAGMA wal_checkpoint(FULL)")
+        database.openHelper.writableDatabase
+            .query(androidx.sqlite.db.SimpleSQLiteQuery("PRAGMA wal_checkpoint(FULL)"))
+            .use { it.moveToFirst() }
     }
 
     /** Closes the database so the file can be replaced during restore. */
