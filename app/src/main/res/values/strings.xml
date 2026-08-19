@@ -189,6 +189,15 @@
     <string name="reminder_hours_before">%1$d jam sebelumnya</string>
     <string name="permission_notification_denied">Pengingat tidak akan bekerja tanpa izin notifikasi. Aktifkan izin notifikasi di pengaturan sistem untuk menerima pengingat.</string>
 
+    <!-- Missed Alarm / Reminder -->
+    <string name="missed_alarm_channel_name">Alarm &amp; Pengingat Terlewat</string>
+    <string name="missed_habit_alarm_title">Alarm Kebiasaan Terlewat ⏰</string>
+    <string name="missed_habit_alarm_body">Kamu melewatkan alarm \"%1$s\". Jangan patah semangat, yuk tetap luangkan waktu untuk melanjutkannya!</string>
+    <string name="missed_schedule_alarm_title">Jadwal Terlewat ⏰</string>
+    <string name="missed_schedule_alarm_body">Jadwal \"%1$s\" telah terlewat. Kamu masih bisa menyelesaikan sisa rencanamu hari ini.</string>
+    <string name="action_open">Buka</string>
+    <string name="action_snooze_10">Tunda 10 Menit</string>
+
     <!-- Progress tabs -->
     <string name="progress_tab_study">Belajar</string>
     <string name="progress_tab_statistics">Statistik</string>

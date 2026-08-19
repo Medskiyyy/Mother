@@ -17,6 +17,11 @@ import android.os.Vibrator
 import android.os.VibratorManager
 import androidx.core.app.NotificationCompat
 import com.mother.app.R
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /**
  * Foreground Service that handles habit alarm ringing.
@@ -29,12 +34,16 @@ class HabitAlarmService : Service() {
     private var mediaPlayer: MediaPlayer? = null
     private var vibrator: Vibrator? = null
     private var wakeLock: PowerManager.WakeLock? = null
+    private val serviceScope = CoroutineScope(Dispatchers.Main + Job())
+    private var timeoutJob: Job? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_STOP -> {
+                timeoutJob?.cancel()
+                timeoutJob = null
                 stopAlarm()
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf()
@@ -47,9 +56,13 @@ class HabitAlarmService : Service() {
         val reminderId = intent?.getStringExtra(ReminderScheduler.EXTRA_REMINDER_ID) ?: ""
         val title = intent?.getStringExtra("title") ?: getString(R.string.reminder_notification_title)
 
+        // Cancel previous timeout if any
+        timeoutJob?.cancel()
+
         // Acquire WakeLock to keep device awake
         wakeLock?.let { if (it.isHeld) it.release() }
         val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
+        @Suppress("DEPRECATION")
         wakeLock = pm.newWakeLock(
             PowerManager.PARTIAL_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP,
             "Mother:HabitAlarmWakeLock"
@@ -65,6 +78,20 @@ class HabitAlarmService : Service() {
         // Start loud alarm sound + vibration
         startAlarmSound()
         startVibration()
+
+        // Auto-timeout after 90 seconds -> Missed Alarm notification
+        timeoutJob = serviceScope.launch {
+            delay(ALARM_TIMEOUT_MS)
+            stopAlarm()
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            ReminderReceiver.showMissedHabitNotification(
+                applicationContext,
+                ownerId,
+                reminderId,
+                title
+            )
+            stopSelf()
+        }
 
         return START_NOT_STICKY
     }
@@ -194,6 +221,8 @@ class HabitAlarmService : Service() {
     }
 
     override fun onDestroy() {
+        timeoutJob?.cancel()
+        timeoutJob = null
         stopAlarm()
         super.onDestroy()
     }
@@ -202,6 +231,7 @@ class HabitAlarmService : Service() {
         const val ALARM_CHANNEL_ID = "mother_habit_alarm_v3_silent"
         const val ALARM_NOTIFICATION_ID = 99999
         const val ACTION_STOP = "com.mother.app.action.STOP_HABIT_ALARM"
+        const val ALARM_TIMEOUT_MS = 90_000L // 90 seconds timeout
 
         fun stop(context: Context) {
             val intent = Intent(context, HabitAlarmService::class.java).apply {

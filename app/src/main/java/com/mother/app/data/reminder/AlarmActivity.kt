@@ -112,6 +112,7 @@ class AlarmActivity : ComponentActivity() {
     private fun dismissReminder(reminderId: String) {
         val nm = getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
         nm.cancel(ReminderScheduler.requestCode(reminderId))
+        nm.cancel(ReminderScheduler.requestCode("missed_$reminderId"))
         nm.cancel(HabitAlarmService.ALARM_NOTIFICATION_ID)
     }
 
@@ -120,6 +121,11 @@ class AlarmActivity : ComponentActivity() {
             val newTrigger = System.currentTimeMillis() + 5 * 60_000L
             ReminderScheduler.schedule(applicationContext, ownerType, ownerId, reminderId, newTrigger)
         }
+    }
+
+    override fun onDestroy() {
+        HabitAlarmService.stop(this)
+        super.onDestroy()
     }
 }
 

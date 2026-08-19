@@ -31,6 +31,7 @@ class ReminderReceiver : BroadcastReceiver() {
 
         when (intent.action) {
             ACTION_SNOOZE -> handleSnooze(context, ownerType, ownerId, reminderId)
+            ACTION_SNOOZE_10 -> handleSnoozeMinutes(context, ownerType, ownerId, reminderId, 10)
             ACTION_DISMISS -> handleDismiss(context, ownerType, ownerId, reminderId)
             ACTION_START -> handleStart(context, ownerType, ownerId, reminderId)
             else -> handleRing(context, ownerType, ownerId, reminderId)
@@ -108,6 +109,27 @@ class ReminderReceiver : BroadcastReceiver() {
         }
     }
 
+    /** Re-arms the alarm [minutes] from now (used by missed alarm actions). */
+    private fun handleSnoozeMinutes(
+        context: Context,
+        ownerType: String,
+        ownerId: String,
+        reminderId: String,
+        minutes: Int
+    ) {
+        dismissNotification(context, reminderId)
+        val pending = goAsync()
+        val container = (context.applicationContext as MotherApplication).container
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val newTrigger = System.currentTimeMillis() + minutes * 60_000L
+                ReminderScheduler.schedule(context, ownerType, ownerId, reminderId, newTrigger)
+            } finally {
+                pending.finish()
+            }
+        }
+    }
+
     private fun handleDismiss(context: Context, ownerType: String, ownerId: String, reminderId: String) {
         dismissNotification(context, reminderId)
     }
@@ -125,6 +147,7 @@ class ReminderReceiver : BroadcastReceiver() {
         val notificationManager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.cancel(ReminderScheduler.requestCode(reminderId))
+        notificationManager.cancel(ReminderScheduler.requestCode("missed_$reminderId"))
     }
 
     private suspend fun loadTitle(
@@ -238,34 +261,147 @@ class ReminderReceiver : BroadcastReceiver() {
         return builder.build()
     }
 
-    private fun actionPendingIntent(
-        context: Context,
-        action: String,
-        ownerType: String,
-        ownerId: String,
-        reminderId: String
-    ): PendingIntent {
-        val intent = Intent(context, ReminderReceiver::class.java).apply {
-            this.action = action
-            putExtra(ReminderScheduler.EXTRA_OWNER_TYPE, ownerType)
-            putExtra(ReminderScheduler.EXTRA_OWNER_ID, ownerId)
-            putExtra(ReminderScheduler.EXTRA_REMINDER_ID, reminderId)
-        }
-        return PendingIntent.getBroadcast(
-            context,
-            // Different request codes per action so the three PendingIntents coexist.
-            (action + reminderId).hashCode(),
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-    }
-
     companion object {
         const val CHANNEL_ID = "mother_reminder"
+        const val MISSED_CHANNEL_ID = "mother_missed_alarm"
         const val ACTION_START = "com.mother.app.action.REMINDER_START"
         const val ACTION_SNOOZE = "com.mother.app.action.REMINDER_SNOOZE"
+        const val ACTION_SNOOZE_10 = "com.mother.app.action.REMINDER_SNOOZE_10"
         const val ACTION_DISMISS = "com.mother.app.action.REMINDER_DISMISS"
         private const val DEFAULT_SNOOZE_MINUTE = 5
+
+        fun ensureMissedChannel(notificationManager: NotificationManager, context: Context) {
+            val channel = NotificationChannel(
+                MISSED_CHANNEL_ID,
+                context.getString(R.string.missed_alarm_channel_name),
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                val soundUri = android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_NOTIFICATION)
+                setSound(
+                    soundUri,
+                    android.media.AudioAttributes.Builder()
+                        .setUsage(android.media.AudioAttributes.USAGE_NOTIFICATION)
+                        .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .build()
+                )
+                enableVibration(true)
+                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+            }
+            notificationManager.createNotificationChannel(channel)
+        }
+
+        fun showMissedHabitNotification(
+            context: Context,
+            ownerId: String,
+            reminderId: String,
+            title: String
+        ) {
+            val notificationManager =
+                context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            ensureMissedChannel(notificationManager, context)
+
+            val openIntent = PendingIntent.getActivity(
+                context,
+                0,
+                Intent(context, MainActivity::class.java).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                },
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            )
+
+            val notificationTitle = context.getString(R.string.missed_habit_alarm_title)
+            val habitTitle = title.ifBlank { context.getString(R.string.quick_add_habit) }
+            val notificationBody = context.getString(R.string.missed_habit_alarm_body, habitTitle)
+
+            val builder = NotificationCompat.Builder(context, MISSED_CHANNEL_ID)
+                .setSmallIcon(android.R.drawable.ic_dialog_info)
+                .setContentTitle(notificationTitle)
+                .setContentText(notificationBody)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(notificationBody))
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setAutoCancel(true)
+                .setContentIntent(openIntent)
+                .addAction(
+                    0,
+                    context.getString(R.string.action_open),
+                    actionPendingIntent(context, ACTION_START, ReminderScheduler.OWNER_HABIT, ownerId, reminderId)
+                )
+                .addAction(
+                    0,
+                    context.getString(R.string.action_snooze_10),
+                    actionPendingIntent(context, ACTION_SNOOZE_10, ReminderScheduler.OWNER_HABIT, ownerId, reminderId)
+                )
+
+            notificationManager.notify(
+                ReminderScheduler.requestCode("missed_$reminderId"),
+                builder.build()
+            )
+        }
+
+        fun showMissedScheduleNotification(
+            context: Context,
+            ownerId: String,
+            reminderId: String,
+            title: String
+        ) {
+            val notificationManager =
+                context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            ensureMissedChannel(notificationManager, context)
+
+            val openIntent = PendingIntent.getActivity(
+                context,
+                0,
+                Intent(context, MainActivity::class.java).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                },
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            )
+
+            val notificationTitle = context.getString(R.string.missed_schedule_alarm_title)
+            val scheduleTitle = title.ifBlank { context.getString(R.string.quick_add_schedule) }
+            val notificationBody = context.getString(R.string.missed_schedule_alarm_body, scheduleTitle)
+
+            val builder = NotificationCompat.Builder(context, MISSED_CHANNEL_ID)
+                .setSmallIcon(android.R.drawable.ic_dialog_info)
+                .setContentTitle(notificationTitle)
+                .setContentText(notificationBody)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(notificationBody))
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setAutoCancel(true)
+                .setContentIntent(openIntent)
+                .addAction(
+                    0,
+                    context.getString(R.string.action_open),
+                    actionPendingIntent(context, ACTION_START, ReminderScheduler.OWNER_SCHEDULE, ownerId, reminderId)
+                )
+
+            notificationManager.notify(
+                ReminderScheduler.requestCode("missed_$reminderId"),
+                builder.build()
+            )
+        }
+
+        fun actionPendingIntent(
+            context: Context,
+            action: String,
+            ownerType: String,
+            ownerId: String,
+            reminderId: String
+        ): PendingIntent {
+            val intent = Intent(context, ReminderReceiver::class.java).apply {
+                this.action = action
+                putExtra(ReminderScheduler.EXTRA_OWNER_TYPE, ownerType)
+                putExtra(ReminderScheduler.EXTRA_OWNER_ID, ownerId)
+                putExtra(ReminderScheduler.EXTRA_REMINDER_ID, reminderId)
+            }
+            return PendingIntent.getBroadcast(
+                context,
+                // Different request codes per action so the PendingIntents coexist.
+                (action + reminderId).hashCode(),
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+        }
     }
 }
 
@@ -304,7 +440,8 @@ class BootReceiver : BroadcastReceiver() {
                     .filter { it.enabled }
                     .forEach { reminder ->
                         var targetTime = reminder.triggerTime
-                        if (targetTime <= now) {
+                        val wasMissed = targetTime <= now
+                        if (wasMissed) {
                             val cal = java.util.Calendar.getInstance().apply {
                                 timeInMillis = targetTime
                                 while (timeInMillis <= now) {
@@ -313,6 +450,17 @@ class BootReceiver : BroadcastReceiver() {
                             }
                             targetTime = cal.timeInMillis
                             container.reminderRepository.upsertHabitReminder(reminder.copy(triggerTime = targetTime))
+
+                            // Send missed notification if missed within the last 12 hours
+                            if (now - reminder.triggerTime <= 12 * 60 * 60_000L) {
+                                val habit = container.habitRepository.getById(reminder.habitId)
+                                ReminderReceiver.showMissedHabitNotification(
+                                    context,
+                                    reminder.habitId,
+                                    reminder.id,
+                                    habit?.title ?: ""
+                                )
+                            }
                         }
                         ReminderScheduler.schedule(
                             context,
@@ -331,3 +479,4 @@ class BootReceiver : BroadcastReceiver() {
 
 /** Generates a reminder UUID (kept here so callers stay terse). */
 fun newReminderId(): String = UUID.randomUUID().toString()
+
