@@ -1,6 +1,7 @@
 package com.mother.app.ui.calendar
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
 import androidx.compose.ui.graphics.Color
@@ -20,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.Schedule
 import com.mother.app.ui.components.NeoCard
 import com.mother.app.ui.components.ScheduleDetailDialog
 import com.mother.app.ui.components.TaskDetailDialog
@@ -35,6 +38,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
@@ -340,6 +344,9 @@ private fun MonthGrid(
 @Composable
 private fun CalendarScheduleRow(schedule: ScheduleEntity, onEdit: () -> Unit) {
     var showDetailDialog by remember { mutableStateOf(false) }
+    val isDark = com.mother.app.ui.theme.isAppInDarkTheme()
+    val iconBoxBg = if (isDark) com.mother.app.ui.theme.DarkColors.SolidYellow else com.mother.app.ui.theme.LightColors.SolidYellow
+    val borderColor = if (isDark) com.mother.app.ui.theme.DarkColors.Outline else com.mother.app.ui.theme.LightColors.Outline
 
     NeoCard(
         modifier = Modifier.fillMaxWidth(),
@@ -351,6 +358,22 @@ private fun CalendarScheduleRow(schedule: ScheduleEntity, onEdit: () -> Unit) {
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(iconBoxBg)
+                    .border(2.dp, borderColor, RoundedCornerShape(8.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Schedule,
+                    contentDescription = null,
+                    tint = Color(0xFF121212),
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+            Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     schedule.title,

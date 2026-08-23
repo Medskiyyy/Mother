@@ -385,6 +385,9 @@ private fun DeadlineRow(task: TaskEntity, onEdit: () -> Unit = {}) {
 @Composable
 private fun ScheduleRow(schedule: ScheduleEntity, onEdit: () -> Unit = {}) {
     var showDetailDialog by remember { mutableStateOf(false) }
+    val isDark = com.mother.app.ui.theme.isAppInDarkTheme()
+    val iconBoxBg = if (isDark) com.mother.app.ui.theme.DarkColors.SolidYellow else com.mother.app.ui.theme.LightColors.SolidYellow
+    val borderColor = if (isDark) com.mother.app.ui.theme.DarkColors.Outline else com.mother.app.ui.theme.LightColors.Outline
 
     NeoCard(
         modifier = Modifier.fillMaxWidth(),
@@ -400,8 +403,8 @@ private fun ScheduleRow(schedule: ScheduleEntity, onEdit: () -> Unit = {}) {
                 modifier = Modifier
                     .size(40.dp)
                     .clip(RoundedCornerShape(8.dp))
-                    .background(MaterialTheme.colorScheme.primary)
-                    .border(2.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp)),
+                    .background(iconBoxBg)
+                    .border(2.dp, borderColor, RoundedCornerShape(8.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
