@@ -6,18 +6,19 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import com.mother.app.ui.components.NeoCard
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -28,11 +29,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -40,20 +39,26 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
-import com.mother.app.MotherApplication
+import com.mother.app.BuildConfig
 import com.mother.app.R
 import com.mother.app.data.backup.BackupManager
 import com.mother.app.data.local.entity.AppSettingEntity
 import com.mother.app.data.model.Theme
 import com.mother.app.data.repository.SettingRepository
+import com.mother.app.data.update.AppReleaseInfo
+import com.mother.app.data.update.UpdateManager
+import com.mother.app.data.update.UpdateState
 import com.mother.app.di.AppContainer
+import com.mother.app.ui.components.NeoCard
+import com.mother.app.ui.components.NeoOutlinedButton
+import com.mother.app.ui.components.UpdateDialog
 import com.mother.app.util.TimeUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import com.mother.app.ui.components.NeoOutlinedButton
+import java.io.File
 
 data class SettingsUiState(
     val setting: AppSettingEntity? = null,
@@ -64,11 +69,14 @@ data class SettingsUiState(
 class SettingsViewModel(
     private val container: AppContainer,
     private val settingRepository: SettingRepository,
-    private val backupManager: BackupManager
+    private val backupManager: BackupManager,
+    val updateManager: UpdateManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
+
+    val updateState: StateFlow<UpdateState> = updateManager.updateState
 
     init {
         viewModelScope.launch {
@@ -80,6 +88,26 @@ class SettingsViewModel(
 
     fun onThemeChange(theme: Theme) {
         viewModelScope.launch { settingRepository.updateTheme(theme.name) }
+    }
+
+    fun checkForUpdates() {
+        viewModelScope.launch {
+            updateManager.checkForUpdates(isManualCheck = true)
+        }
+    }
+
+    fun startDownload(release: AppReleaseInfo) {
+        viewModelScope.launch {
+            updateManager.downloadUpdate(release)
+        }
+    }
+
+    fun installUpdate(file: File) {
+        updateManager.installUpdate(file)
+    }
+
+    fun dismissUpdate() {
+        updateManager.dismiss()
     }
 
     fun export(uri: android.net.Uri) {
@@ -114,7 +142,7 @@ class SettingsViewModel(
         fun factory(container: AppContainer, backupManager: BackupManager): ViewModelProvider.Factory =
             viewModelFactory {
                 initializer {
-                    SettingsViewModel(container, container.settingRepository, backupManager)
+                    SettingsViewModel(container, container.settingRepository, backupManager, container.updateManager)
                 }
             }
     }
@@ -123,6 +151,7 @@ class SettingsViewModel(
 @Composable
 fun SettingsScreen(viewModel: SettingsViewModel) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val updateState by viewModel.updateState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     var showRestoreConfirm by remember { mutableStateOf(false) }
@@ -137,6 +166,22 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
         if (uri != null) {
             pendingRestoreUri = uri
             showRestoreConfirm = true
+        }
+    }
+
+    // Handle update status snackbars
+    LaunchedEffect(updateState) {
+        when (updateState) {
+            is UpdateState.UpToDate -> {
+                snackbarHostState.showSnackbar(context.getString(R.string.update_already_latest, BuildConfig.VERSION_NAME))
+                viewModel.dismissUpdate()
+            }
+            is UpdateState.Error -> {
+                // If manual check errored with no dialog
+                snackbarHostState.showSnackbar(context.getString(R.string.update_error_network))
+                viewModel.dismissUpdate()
+            }
+            else -> Unit
         }
     }
 
@@ -176,7 +221,10 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                 },
                 onImport = { restoreLauncher.launch(arrayOf("*/*")) }
             )
-            AboutCard()
+            AboutCard(
+                isChecking = updateState is UpdateState.Checking,
+                onCheckUpdate = viewModel::checkForUpdates
+            )
         }
     }
 
@@ -215,6 +263,14 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
             }
         )
     }
+
+    // Neobrutalist Update Dialog
+    UpdateDialog(
+        updateState = updateState,
+        onStartDownload = viewModel::startDownload,
+        onInstall = viewModel::installUpdate,
+        onDismiss = viewModel::dismissUpdate
+    )
 }
 
 @Composable
@@ -298,14 +354,17 @@ private fun BackupCard(lastBackup: Long?, busy: Boolean, onExport: () -> Unit, o
 }
 
 @Composable
-private fun AboutCard() {
-    val versionName = com.mother.app.BuildConfig.VERSION_NAME
+private fun AboutCard(
+    isChecking: Boolean,
+    onCheckUpdate: () -> Unit
+) {
+    val versionName = BuildConfig.VERSION_NAME
     NeoCard(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(
                 stringResource(R.string.settings_about),
@@ -319,6 +378,13 @@ private fun AboutCard() {
                 stringResource(R.string.about_version, versionName),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.height(4.dp))
+            NeoOutlinedButton(
+                text = if (isChecking) stringResource(R.string.update_checking) else stringResource(R.string.update_check_button),
+                onClick = onCheckUpdate,
+                enabled = !isChecking,
+                modifier = Modifier.fillMaxWidth()
             )
         }
     }

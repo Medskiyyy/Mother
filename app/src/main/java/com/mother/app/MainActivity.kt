@@ -40,6 +40,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -59,6 +60,7 @@ import androidx.navigation.compose.rememberNavController
 import com.mother.app.data.local.entity.HabitEntity
 import com.mother.app.data.model.Theme
 import com.mother.app.ui.components.ActiveTimerBanner
+import com.mother.app.ui.components.UpdateDialog
 import com.mother.app.data.timer.ActiveTimerStore
 import com.mother.app.data.timer.TimerService
 import com.mother.app.ui.dashboard.DashboardScreen
@@ -230,6 +232,23 @@ class MainActivity : ComponentActivity() {
         var showMotherGreeting by rememberSaveable { mutableStateOf(true) }
 
         val dashboardState by dashboardViewModel.uiState.collectAsStateWithLifecycle()
+
+        val container = (application as MotherApplication).container
+        val updateManager = container.updateManager
+        val updateState by updateManager.updateState.collectAsStateWithLifecycle()
+
+        LaunchedEffect(Unit) {
+            updateManager.checkForUpdates(isManualCheck = false)
+        }
+
+        UpdateDialog(
+            updateState = updateState,
+            onStartDownload = { release ->
+                lifecycleScope.launch { updateManager.downloadUpdate(release) }
+            },
+            onInstall = { file -> updateManager.installUpdate(file) },
+            onDismiss = { updateManager.dismiss() }
+        )
 
         if (showMotherGreeting && !dashboardState.isLoading) {
             val urgentTask = dashboardState.deadlines.firstOrNull { it.priority == com.mother.app.data.model.Priority.URGENT }

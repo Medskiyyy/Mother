@@ -56,6 +56,9 @@ class AppContainer(context: Context) {
         )
     }
     val achievementRepository: AchievementRepository by lazy { AchievementRepositoryImpl(database.achievementDao()) }
+    val updateManager: com.mother.app.data.update.UpdateManager by lazy {
+        com.mother.app.data.update.UpdateManager(context.applicationContext)
+    }
 
     /** Flushes WAL pages so a file copy of the database is complete (backup). */
     suspend fun checkpoint() = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {

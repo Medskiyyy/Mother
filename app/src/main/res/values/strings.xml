@@ -300,4 +300,18 @@
     <string name="search_group_schedules">Jadwal</string>
     <string name="search_group_habits">Kebiasaan</string>
     <string name="search_group_sessions">Sesi Belajar</string>
+
+    <!-- In-App Update -->
+    <string name="update_available_title">PEMBARUAN TERSEDIA</string>
+    <string name="update_dialog_desc">Versi baru Mother telah tersedia dengan fitur dan perbaikan terbaru:</string>
+    <string name="update_action_now">Perbarui Sekarang</string>
+    <string name="update_action_install">Pasang Sekarang</string>
+    <string name="update_action_later">Nanti Saja</string>
+    <string name="update_downloading">Mengunduh pembaruan… (%1$d%%)</string>
+    <string name="update_check_button">Periksa Pembaruan</string>
+    <string name="update_checking">Memeriksa pembaruan…</string>
+    <string name="update_already_latest">Mother sudah menggunakan versi terbaru (%1$s).</string>
+    <string name="update_error_network">Gagal memeriksa pembaruan. Pastikan perangkat terhubung ke internet.</string>
+    <string name="update_error_download">Gagal mengunduh file pembaruan.</string>
+    <string name="update_changelog_title">Catatan Rilis</string>
 </resources>
