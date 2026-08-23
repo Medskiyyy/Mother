@@ -76,7 +76,7 @@ fun ActiveTimerBanner(
 
             NeoCard(
                 onClick = onClick,
-                containerColor = MaterialTheme.colorScheme.primary,
+                containerColor = if (androidx.compose.foundation.isSystemInDarkTheme()) Color(0xFFFFD15C) else Color(0xFFFFD60A),
                 contentColor = Color(0xFF121212),
                 borderColor = MaterialTheme.colorScheme.outline,
                 modifier = Modifier

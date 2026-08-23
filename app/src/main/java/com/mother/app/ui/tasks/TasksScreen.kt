@@ -223,19 +223,13 @@ private fun TaskSwipeRow(
 @Composable
 private fun TaskRow(task: TaskEntity, onEdit: () -> Unit = {}) {
     var showDetailDialog by remember { mutableStateOf(false) }
-
-    val backgroundColor = when (task.priority) {
-        Priority.URGENT -> PriorityUrgent
-        Priority.MEPET -> PriorityMepet
-        Priority.WASPADA -> PriorityWaspada
-        Priority.AMAN -> PriorityAman
-    }
+    val palette = com.mother.app.ui.theme.getPriorityPalette(task.priority)
 
     NeoCard(
         modifier = Modifier.fillMaxWidth(),
-        containerColor = backgroundColor,
-        contentColor = Color(0xFF121212),
-        borderColor = MaterialTheme.colorScheme.outline,
+        containerColor = palette.cardBg,
+        contentColor = palette.textPrimary,
+        borderColor = palette.cardBorder,
         onClick = { showDetailDialog = true }
     ) {
         Row(
@@ -248,7 +242,7 @@ private fun TaskRow(task: TaskEntity, onEdit: () -> Unit = {}) {
                 Text(
                     text = task.title,
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
-                    color = Color(0xFF121212),
+                    color = palette.textPrimary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -257,7 +251,7 @@ private fun TaskRow(task: TaskEntity, onEdit: () -> Unit = {}) {
                     text = task.deadline?.let { TimeUtils.formatFullDate(it) }
                         ?: stringResource(R.string.field_not_selected),
                     style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
-                    color = Color(0xFF2C2C2C)
+                    color = palette.textSecondary
                 )
             }
             Spacer(Modifier.width(8.dp))
@@ -267,7 +261,7 @@ private fun TaskRow(task: TaskEntity, onEdit: () -> Unit = {}) {
                 Icon(
                     imageVector = Icons.Filled.Edit,
                     contentDescription = "Edit Tugas",
-                    tint = Color(0xFF121212)
+                    tint = palette.textPrimary
                 )
             }
         }

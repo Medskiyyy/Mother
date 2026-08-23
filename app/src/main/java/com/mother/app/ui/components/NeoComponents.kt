@@ -32,6 +32,7 @@ import com.mother.app.ui.theme.PriorityAman
 import com.mother.app.ui.theme.PriorityMepet
 import com.mother.app.ui.theme.PriorityUrgent
 import com.mother.app.ui.theme.PriorityWaspada
+import com.mother.app.ui.theme.SolidYellow
 
 import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
@@ -105,8 +106,8 @@ fun NeoButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    containerColor: Color = MaterialTheme.colorScheme.primary,
-    contentColor: Color = MaterialTheme.colorScheme.onPrimary,
+    containerColor: Color = SolidYellow,
+    contentColor: Color = Color(0xFF121212),
     borderColor: Color = MaterialTheme.colorScheme.outline,
     fontSize: androidx.compose.ui.unit.TextUnit = androidx.compose.ui.unit.TextUnit.Unspecified,
     contentPadding: androidx.compose.foundation.layout.PaddingValues = ButtonDefaults.ContentPadding,
@@ -209,27 +210,22 @@ fun NeoPriorityBadge(
     priority: Priority,
     modifier: Modifier = Modifier
 ) {
-    val (bgColor, textColor) = when (priority) {
-        Priority.URGENT -> PriorityUrgent to Color(0xFF121212)
-        Priority.MEPET -> PriorityMepet to Color(0xFF121212)
-        Priority.WASPADA -> PriorityWaspada to Color(0xFF121212)
-        Priority.AMAN -> PriorityAman to Color(0xFF121212)
-    }
-
-    val label = priority.name
+    val palette = com.mother.app.ui.theme.getPriorityPalette(priority)
+    val isDark = androidx.compose.foundation.isSystemInDarkTheme()
+    val borderColor = if (isDark) palette.cardBorder else Color(0xFF121212)
 
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(8.dp))
-            .background(bgColor)
-            .border(2.dp, Color(0xFF121212), RoundedCornerShape(8.dp))
+            .background(palette.badgeBg)
+            .border(2.dp, borderColor, RoundedCornerShape(8.dp))
             .padding(horizontal = 10.dp, vertical = 4.dp)
     ) {
         Text(
-            text = label,
+            text = priority.name,
             fontSize = 11.sp,
             fontWeight = FontWeight.Black,
-            color = textColor,
+            color = palette.badgeText,
             letterSpacing = 0.5.sp
         )
     }

@@ -381,19 +381,13 @@ private fun CalendarScheduleRow(schedule: ScheduleEntity, onEdit: () -> Unit) {
 @Composable
 private fun CalendarTaskRow(task: TaskEntity, onEdit: () -> Unit) {
     var showDetailDialog by remember { mutableStateOf(false) }
-
-    val backgroundColor = when (task.priority) {
-        com.mother.app.data.model.Priority.URGENT -> com.mother.app.ui.theme.PriorityUrgent
-        com.mother.app.data.model.Priority.MEPET -> com.mother.app.ui.theme.PriorityMepet
-        com.mother.app.data.model.Priority.WASPADA -> com.mother.app.ui.theme.PriorityWaspada
-        com.mother.app.data.model.Priority.AMAN -> com.mother.app.ui.theme.PriorityAman
-    }
+    val palette = com.mother.app.ui.theme.getPriorityPalette(task.priority)
 
     NeoCard(
         modifier = Modifier.fillMaxWidth(),
-        containerColor = backgroundColor,
-        contentColor = Color(0xFF121212),
-        borderColor = MaterialTheme.colorScheme.outline,
+        containerColor = palette.cardBg,
+        contentColor = palette.textPrimary,
+        borderColor = palette.cardBorder,
         onClick = { showDetailDialog = true }
     ) {
         Row(
@@ -406,7 +400,7 @@ private fun CalendarTaskRow(task: TaskEntity, onEdit: () -> Unit) {
                 Text(
                     task.title,
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Black),
-                    color = Color(0xFF121212),
+                    color = palette.textPrimary,
                     maxLines = 1,
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                 )
@@ -415,7 +409,7 @@ private fun CalendarTaskRow(task: TaskEntity, onEdit: () -> Unit) {
                     stringResource(R.string.field_deadline) + ": " +
                         TimeUtils.formatTime(task.deadline ?: 0L),
                     style = MaterialTheme.typography.bodySmall.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
-                    color = Color(0xFF2C2C2C)
+                    color = palette.textSecondary
                 )
             }
             Spacer(Modifier.width(8.dp))

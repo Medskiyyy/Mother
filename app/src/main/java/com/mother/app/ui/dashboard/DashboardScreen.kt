@@ -182,14 +182,21 @@ private fun Header(greeting: String, dateLabel: String, onSearch: () -> Unit) {
     }
 }
 
-/** Streak Hero Card: Bold Neobrutalist Neon Yellow Block with black flame badge & giant number */
+/** Streak Hero Card: Bold Neobrutalist Block with flame badge & giant number */
 @Composable
 private fun StreakCard(streak: Int) {
+    val isDark = androidx.compose.foundation.isSystemInDarkTheme()
+    val bgColor = if (isDark) Color(0xFF262215) else NeoStreakYellow
+    val borderColor = if (isDark) Color(0xFF6B581B) else MaterialTheme.colorScheme.outline
+    val textColor = if (isDark) Color(0xFFFFEEB0) else Color(0xFF121212)
+    val badgeBg = if (isDark) Color(0xFF14120B) else Color(0xFF121212)
+    val badgeTint = if (isDark) Color(0xFFFFD15C) else NeoStreakYellow
+
     NeoCard(
         modifier = Modifier.fillMaxWidth(),
-        containerColor = NeoStreakYellow,
-        contentColor = Color(0xFF121212),
-        borderColor = MaterialTheme.colorScheme.outline
+        containerColor = bgColor,
+        contentColor = textColor,
+        borderColor = borderColor
     ) {
         Row(
             modifier = Modifier
@@ -202,14 +209,14 @@ private fun StreakCard(streak: Int) {
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(6.dp))
-                        .background(Color(0xFF121212))
+                        .background(badgeBg)
                         .padding(horizontal = 8.dp, vertical = 3.dp)
                 ) {
                     Text(
                         text = stringResource(R.string.dashboard_streak_label).uppercase(),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Black,
-                        color = NeoStreakYellow,
+                        color = badgeTint,
                         letterSpacing = 1.sp
                     )
                 }
@@ -219,7 +226,7 @@ private fun StreakCard(streak: Int) {
                         text = "$streak",
                         fontSize = 48.sp,
                         fontWeight = FontWeight.Black,
-                        color = Color(0xFF121212),
+                        color = textColor,
                         lineHeight = 48.sp
                     )
                     Spacer(Modifier.width(6.dp))
@@ -227,7 +234,7 @@ private fun StreakCard(streak: Int) {
                         text = "HARI",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Black,
-                        color = Color(0xFF121212),
+                        color = textColor,
                         modifier = Modifier.padding(bottom = 6.dp)
                     )
                 }
@@ -236,14 +243,14 @@ private fun StreakCard(streak: Int) {
                 modifier = Modifier
                     .size(64.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFF121212))
-                    .border(3.dp, Color(0xFF121212), CircleShape),
+                    .background(badgeBg)
+                    .border(2.5.dp, borderColor, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Filled.Whatshot,
                     contentDescription = null,
-                    tint = NeoStreakYellow,
+                    tint = badgeTint,
                     modifier = Modifier.size(38.dp)
                 )
             }
@@ -325,23 +332,17 @@ private fun EmptyRow(text: String) {
     }
 }
 
-/** Deadline Card: Full Vibrant Color according to priority, black stroke, capsule badge */
+/** Deadline Card: Neobrutalist styling adapted for light & dark mode */
 @Composable
 private fun DeadlineRow(task: TaskEntity, onEdit: () -> Unit = {}) {
     var showDetailDialog by remember { mutableStateOf(false) }
-
-    val backgroundColor = when (task.priority) {
-        Priority.URGENT -> PriorityUrgent
-        Priority.MEPET -> PriorityMepet
-        Priority.WASPADA -> PriorityWaspada
-        Priority.AMAN -> PriorityAman
-    }
+    val palette = com.mother.app.ui.theme.getPriorityPalette(task.priority)
 
     NeoCard(
         modifier = Modifier.fillMaxWidth(),
-        containerColor = backgroundColor,
-        contentColor = Color(0xFF121212),
-        borderColor = MaterialTheme.colorScheme.outline,
+        containerColor = palette.cardBg,
+        contentColor = palette.textPrimary,
+        borderColor = palette.cardBorder,
         onClick = { showDetailDialog = true }
     ) {
         Row(
@@ -354,7 +355,7 @@ private fun DeadlineRow(task: TaskEntity, onEdit: () -> Unit = {}) {
                 Text(
                     text = task.title,
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
-                    color = Color(0xFF121212),
+                    color = palette.textPrimary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -363,7 +364,7 @@ private fun DeadlineRow(task: TaskEntity, onEdit: () -> Unit = {}) {
                     Text(
                         text = TimeUtils.formatFullDate(it),
                         style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
-                        color = Color(0xFF2C2C2C)
+                        color = palette.textSecondary
                     )
                 }
             }
