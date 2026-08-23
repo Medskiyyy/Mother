@@ -12,11 +12,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
-import org.json.JSONObject
 import java.io.File
 import java.io.FileOutputStream
 import java.net.HttpURLConnection
+import java.net.InetAddress
 import java.net.URL
+import javax.net.ssl.HttpsURLConnection
 
 class UpdateManager(
     private val context: Context,
@@ -73,23 +74,20 @@ class UpdateManager(
             val updatesDir = File(context.cacheDir, "updates").apply { mkdirs() }
             val apkFile = File(updatesDir, release.apkFileName)
 
-            var connection = (URL(release.apkDownloadUrl).openConnection() as HttpURLConnection).apply {
-                connectTimeout = 15000
-                readTimeout = 30000
-                instanceFollowRedirects = true
-                setRequestProperty("User-Agent", "Mother-App-Updater")
-            }
-
+            var connection = openHttpConnection(release.apkDownloadUrl)
             var redirectCount = 0
-            while (connection.responseCode in listOf(HttpURLConnection.HTTP_MOVED_PERM, HttpURLConnection.HTTP_MOVED_TEMP, HttpURLConnection.HTTP_SEE_OTHER, 307, 308) && redirectCount < 5) {
+
+            while (connection.responseCode in listOf(
+                    HttpURLConnection.HTTP_MOVED_PERM,
+                    HttpURLConnection.HTTP_MOVED_TEMP,
+                    HttpURLConnection.HTTP_SEE_OTHER,
+                    307,
+                    308
+                ) && redirectCount < 5
+            ) {
                 val newUrl = connection.getHeaderField("Location") ?: break
                 connection.disconnect()
-                connection = (URL(newUrl).openConnection() as HttpURLConnection).apply {
-                    connectTimeout = 15000
-                    readTimeout = 30000
-                    instanceFollowRedirects = true
-                    setRequestProperty("User-Agent", "Mother-App-Updater")
-                }
+                connection = openHttpConnection(newUrl)
                 redirectCount++
             }
 
@@ -120,6 +118,7 @@ class UpdateManager(
             _updateState.value = UpdateState.ReadyToInstall(release, apkFile)
             apkFile
         } catch (e: Exception) {
+            android.util.Log.e("MotherUpdate", "Download exception: ${e.message}", e)
             _updateState.value = UpdateState.Error(e.message ?: "Download failed")
             null
         }
@@ -162,25 +161,119 @@ class UpdateManager(
         _updateState.value = UpdateState.Idle
     }
 
+    private fun openHttpConnection(urlString: String): HttpURLConnection {
+        val originalUrl = URL(urlString)
+        val host = originalUrl.host
+
+        // Try direct URL connection first
+        try {
+            val conn = (originalUrl.openConnection() as HttpURLConnection).apply {
+                connectTimeout = 10000
+                readTimeout = 25000
+                instanceFollowRedirects = true
+                setRequestProperty("Accept", "application/vnd.github+json")
+                setRequestProperty("User-Agent", "Mother-App-Updater/1.0")
+            }
+            // Trigger DNS resolution
+            conn.responseCode
+            return conn
+        } catch (e: java.net.UnknownHostException) {
+            android.util.Log.w("MotherUpdate", "UnknownHostException for $host, attempting DoH resolution...")
+            val ip = resolveHostIp(host) ?: throw e
+            val ipUrl = URL(urlString.replaceFirst("://$host", "://$ip"))
+            val fallbackConn = (ipUrl.openConnection() as HttpsURLConnection).apply {
+                connectTimeout = 10000
+                readTimeout = 25000
+                instanceFollowRedirects = true
+                setRequestProperty("Host", host)
+                setRequestProperty("Accept", "application/vnd.github+json")
+                setRequestProperty("User-Agent", "Mother-App-Updater/1.0")
+                hostnameVerifier = javax.net.ssl.HostnameVerifier { _, session ->
+                    HttpsURLConnection.getDefaultHostnameVerifier().verify(host, session)
+                }
+            }
+            return fallbackConn
+        }
+    }
+
     private fun fetchUrlString(urlString: String): String? {
         var conn: HttpURLConnection? = null
         return try {
-            conn = (URL(urlString).openConnection() as HttpURLConnection).apply {
-                connectTimeout = 8000
-                readTimeout = 10000
-                setRequestProperty("Accept", "application/vnd.github+json")
-                setRequestProperty("User-Agent", "Mother-App-Updater")
-            }
-            if (conn.responseCode == HttpURLConnection.HTTP_OK) {
+            conn = openHttpConnection(urlString)
+            val responseCode = conn.responseCode
+            android.util.Log.d("MotherUpdate", "Connecting to $urlString -> HTTP $responseCode")
+            if (responseCode == HttpURLConnection.HTTP_OK) {
                 conn.inputStream.bufferedReader().use { it.readText() }
             } else {
+                val errorBody = conn.errorStream?.bufferedReader()?.use { it.readText() }
+                android.util.Log.e("MotherUpdate", "HTTP error $responseCode: $errorBody")
                 null
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            android.util.Log.e("MotherUpdate", "Network exception fetching update: ${e.javaClass.name}: ${e.message}\n${android.util.Log.getStackTraceString(e)}")
             null
         } finally {
             conn?.disconnect()
         }
+    }
+
+    private fun resolveHostIp(hostname: String): String? {
+        // 1. Try standard InetAddress
+        try {
+            return InetAddress.getByName(hostname).hostAddress
+        } catch (_: Exception) {}
+
+        // 2. Try DNS over HTTPS (Cloudflare 1.1.1.1 direct IP)
+        try {
+            val dohUrl = "https://1.1.1.1/dns-query?name=$hostname&type=A"
+            val conn = (URL(dohUrl).openConnection() as HttpsURLConnection).apply {
+                connectTimeout = 5000
+                readTimeout = 5000
+                setRequestProperty("Accept", "application/dns-json")
+                setRequestProperty("User-Agent", "Mother-App-Updater/1.0")
+            }
+            if (conn.responseCode == 200) {
+                val json = conn.inputStream.bufferedReader().use { it.readText() }
+                val ipPattern = "\"data\"\\s*:\\s*\"([0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+)\"".toRegex()
+                val match = ipPattern.find(json)
+                if (match != null) {
+                    val ip = match.groupValues[1]
+                    android.util.Log.d("MotherUpdate", "Resolved $hostname via DoH 1.1.1.1 -> $ip")
+                    return ip
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("MotherUpdate", "DoH 1.1.1.1 error: ${e.message}")
+        }
+
+        // 3. Try DNS over HTTPS (Google 8.8.8.8 direct IP)
+        try {
+            val dohUrl = "https://8.8.8.8/resolve?name=$hostname&type=A"
+            val conn = (URL(dohUrl).openConnection() as HttpsURLConnection).apply {
+                connectTimeout = 5000
+                readTimeout = 5000
+                setRequestProperty("Accept", "application/json")
+                setRequestProperty("User-Agent", "Mother-App-Updater/1.0")
+            }
+            if (conn.responseCode == 200) {
+                val json = conn.inputStream.bufferedReader().use { it.readText() }
+                val ipPattern = "\"data\"\\s*:\\s*\"([0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+)\"".toRegex()
+                val match = ipPattern.find(json)
+                if (match != null) {
+                    val ip = match.groupValues[1]
+                    android.util.Log.d("MotherUpdate", "Resolved $hostname via DoH 8.8.8.8 -> $ip")
+                    return ip
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("MotherUpdate", "DoH 8.8.8.8 error: ${e.message}")
+        }
+
+        // 4. Fallback known IP for api.github.com
+        if (hostname.contains("api.github.com")) {
+            return "20.205.243.168"
+        }
+        return null
     }
 
     companion object {
