@@ -81,6 +81,7 @@ data class CreateTaskUiState(
     val showCategoryPicker: Boolean = false,
     val titleError: Boolean = false,
     val categoryError: Boolean = false,
+    val deadlineError: Boolean = false,
     val reminderOffsets: Set<Int> = emptySet(),
     val saving: Boolean = false,
     val errorMessage: String? = null
@@ -145,7 +146,7 @@ class CreateTaskViewModel(
 
     fun onDeadlineChange(value: Long?) = _uiState.update {
         val autoPriority = PriorityUtils.calculatePriority(value)
-        it.copy(deadline = value, priority = autoPriority)
+        it.copy(deadline = value, priority = autoPriority, deadlineError = false)
     }
 
     fun toggleReminderOffset(offset: Int) = _uiState.update { state ->
@@ -172,8 +173,15 @@ class CreateTaskViewModel(
         val state = _uiState.value
         val titleBlank = state.title.isBlank()
         val categoryMissing = state.categoryId == null
-        if (titleBlank || categoryMissing) {
-            _uiState.update { it.copy(titleError = titleBlank, categoryError = categoryMissing) }
+        val deadlineMissing = state.deadline == null
+        if (titleBlank || categoryMissing || deadlineMissing) {
+            _uiState.update {
+                it.copy(
+                    titleError = titleBlank,
+                    categoryError = categoryMissing,
+                    deadlineError = deadlineMissing
+                )
+            }
             return
         }
         _uiState.update { it.copy(saving = true, errorMessage = null) }
@@ -330,6 +338,7 @@ fun CreateTaskScreen(
 
             DeadlineRow(
                 deadline = state.deadline,
+                isError = state.deadlineError,
                 onPicked = { viewModel.onDeadlineChange(it) },
                 onCleared = { viewModel.onDeadlineChange(null) }
             )
@@ -407,27 +416,49 @@ internal fun AutoPriorityCard(priority: Priority) {
 @Composable
 internal fun DeadlineRow(
     deadline: Long?,
+    isError: Boolean = false,
     onPicked: (Long) -> Unit,
     onCleared: () -> Unit
 ) {
     var showDatePicker by remember { mutableStateOf(false) }
     val label = deadline?.let { TimeUtils.formatFullDate(it) }
         ?: stringResource(R.string.field_not_selected)
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { showDatePicker = true }
-            .padding(vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
+            .padding(vertical = 8.dp)
     ) {
-        Column {
-            Text(stringResource(R.string.field_deadline), style = MaterialTheme.typography.labelMedium)
-            Text(label, style = MaterialTheme.typography.bodyLarge)
-        }
-        if (deadline != null) {
-            TextButton(onClick = onCleared) {
-                Text(stringResource(R.string.form_cancel))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(
+                    text = stringResource(R.string.field_deadline) + " *",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+                )
             }
+            if (deadline != null) {
+                TextButton(onClick = onCleared) {
+                    Text(stringResource(R.string.form_cancel))
+                }
+            }
+        }
+        if (isError) {
+            Text(
+                text = stringResource(R.string.error_deadline_required),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(top = 4.dp)
+            )
         }
     }
 

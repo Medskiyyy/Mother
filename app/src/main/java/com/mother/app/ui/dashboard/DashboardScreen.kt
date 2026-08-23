@@ -33,6 +33,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -54,6 +57,8 @@ import com.mother.app.ui.components.LoadingState
 import com.mother.app.ui.components.NeoCard
 import com.mother.app.ui.components.NeoOutlinedButton
 import com.mother.app.ui.components.NeoPriorityBadge
+import com.mother.app.ui.components.ScheduleDetailDialog
+import com.mother.app.ui.components.TaskDetailDialog
 import com.mother.app.ui.screens.statusLabel
 import com.mother.app.ui.theme.NeoShadowColor
 import com.mother.app.ui.theme.NeoStreakYellow
@@ -115,7 +120,7 @@ private fun DashboardContent(
             }
         } else {
             items(state.deadlines, key = { it.id }) { task ->
-                DeadlineRow(task, onClick = { onEditTask?.invoke(task.id) })
+                DeadlineRow(task, onEdit = { onEditTask?.invoke(task.id) })
             }
         }
         item {
@@ -127,7 +132,7 @@ private fun DashboardContent(
             }
         } else {
             items(state.todaySchedule, key = { it.id }) { schedule ->
-                ScheduleRow(schedule, onClick = { onEditSchedule?.invoke(schedule.id) })
+                ScheduleRow(schedule, onEdit = { onEditSchedule?.invoke(schedule.id) })
             }
         }
         item {
@@ -322,7 +327,9 @@ private fun EmptyRow(text: String) {
 
 /** Deadline Card: Full Vibrant Color according to priority, black stroke, capsule badge */
 @Composable
-private fun DeadlineRow(task: TaskEntity, onClick: () -> Unit = {}) {
+private fun DeadlineRow(task: TaskEntity, onEdit: () -> Unit = {}) {
+    var showDetailDialog by remember { mutableStateOf(false) }
+
     val backgroundColor = when (task.priority) {
         Priority.URGENT -> PriorityUrgent
         Priority.MEPET -> PriorityMepet
@@ -335,7 +342,7 @@ private fun DeadlineRow(task: TaskEntity, onClick: () -> Unit = {}) {
         containerColor = backgroundColor,
         contentColor = Color(0xFF121212),
         borderColor = MaterialTheme.colorScheme.outline,
-        onClick = onClick
+        onClick = { showDetailDialog = true }
     ) {
         Row(
             modifier = Modifier
@@ -364,13 +371,23 @@ private fun DeadlineRow(task: TaskEntity, onClick: () -> Unit = {}) {
             NeoPriorityBadge(priority = task.priority)
         }
     }
+
+    if (showDetailDialog) {
+        TaskDetailDialog(
+            task = task,
+            onEdit = onEdit,
+            onDismiss = { showDetailDialog = false }
+        )
+    }
 }
 
 @Composable
-private fun ScheduleRow(schedule: ScheduleEntity, onClick: () -> Unit = {}) {
+private fun ScheduleRow(schedule: ScheduleEntity, onEdit: () -> Unit = {}) {
+    var showDetailDialog by remember { mutableStateOf(false) }
+
     NeoCard(
         modifier = Modifier.fillMaxWidth(),
-        onClick = onClick
+        onClick = { showDetailDialog = true }
     ) {
         Row(
             modifier = Modifier
@@ -413,6 +430,14 @@ private fun ScheduleRow(schedule: ScheduleEntity, onClick: () -> Unit = {}) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
+    }
+
+    if (showDetailDialog) {
+        ScheduleDetailDialog(
+            schedule = schedule,
+            onEdit = onEdit,
+            onDismiss = { showDetailDialog = false }
+        )
     }
 }
 

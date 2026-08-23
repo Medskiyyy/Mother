@@ -21,6 +21,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import com.mother.app.ui.components.NeoCard
+import com.mother.app.ui.components.ScheduleDetailDialog
+import com.mother.app.ui.components.TaskDetailDialog
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -28,6 +30,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -192,74 +197,10 @@ fun CalendarScreen(
             )
         }
         items(state.daySchedules, key = { "s_" + it.id }) { schedule ->
-            NeoCard(
-                modifier = Modifier.fillMaxWidth(),
-                onClick = { onEditSchedule?.invoke(schedule.id) }
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            schedule.title,
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
-                            maxLines = 1,
-                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                        )
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            "${TimeUtils.formatTime(schedule.startTime)} - ${TimeUtils.formatTime(schedule.endTime)} " +
-                                "(${statusLabel(schedule.status)})",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            }
+            CalendarScheduleRow(schedule = schedule, onEdit = { onEditSchedule?.invoke(schedule.id) })
         }
         items(state.dayTasks, key = { "t_" + it.id }) { task ->
-            val backgroundColor = when (task.priority) {
-                com.mother.app.data.model.Priority.URGENT -> com.mother.app.ui.theme.PriorityUrgent
-                com.mother.app.data.model.Priority.MEPET -> com.mother.app.ui.theme.PriorityMepet
-                com.mother.app.data.model.Priority.WASPADA -> com.mother.app.ui.theme.PriorityWaspada
-                com.mother.app.data.model.Priority.AMAN -> com.mother.app.ui.theme.PriorityAman
-            }
-            NeoCard(
-                modifier = Modifier.fillMaxWidth(),
-                containerColor = backgroundColor,
-                contentColor = Color(0xFF121212),
-                borderColor = MaterialTheme.colorScheme.outline,
-                onClick = { onEditTask?.invoke(task.id) }
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            task.title,
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Black),
-                            color = Color(0xFF121212),
-                            maxLines = 1,
-                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                        )
-                        Spacer(Modifier.height(2.dp))
-                        Text(
-                            stringResource(R.string.field_deadline) + ": " +
-                                TimeUtils.formatTime(task.deadline ?: 0L),
-                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
-                            color = Color(0xFF2C2C2C)
-                        )
-                    }
-                    Spacer(Modifier.width(8.dp))
-                    com.mother.app.ui.components.NeoPriorityBadge(priority = task.priority)
-                }
-            }
+            CalendarTaskRow(task = task, onEdit = { onEditTask?.invoke(task.id) })
         }
         items(state.daySessions, key = { "ss_" + it.id }) { session ->
             NeoCard(modifier = Modifier.fillMaxWidth()) {
@@ -395,3 +336,99 @@ private fun MonthGrid(
         }
     }
 }
+
+@Composable
+private fun CalendarScheduleRow(schedule: ScheduleEntity, onEdit: () -> Unit) {
+    var showDetailDialog by remember { mutableStateOf(false) }
+
+    NeoCard(
+        modifier = Modifier.fillMaxWidth(),
+        onClick = { showDetailDialog = true }
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    schedule.title,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    "${TimeUtils.formatTime(schedule.startTime)} - ${TimeUtils.formatTime(schedule.endTime)} " +
+                        "(${com.mother.app.ui.screens.statusLabel(schedule.status)})",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+
+    if (showDetailDialog) {
+        ScheduleDetailDialog(
+            schedule = schedule,
+            onEdit = onEdit,
+            onDismiss = { showDetailDialog = false }
+        )
+    }
+}
+
+@Composable
+private fun CalendarTaskRow(task: TaskEntity, onEdit: () -> Unit) {
+    var showDetailDialog by remember { mutableStateOf(false) }
+
+    val backgroundColor = when (task.priority) {
+        com.mother.app.data.model.Priority.URGENT -> com.mother.app.ui.theme.PriorityUrgent
+        com.mother.app.data.model.Priority.MEPET -> com.mother.app.ui.theme.PriorityMepet
+        com.mother.app.data.model.Priority.WASPADA -> com.mother.app.ui.theme.PriorityWaspada
+        com.mother.app.data.model.Priority.AMAN -> com.mother.app.ui.theme.PriorityAman
+    }
+
+    NeoCard(
+        modifier = Modifier.fillMaxWidth(),
+        containerColor = backgroundColor,
+        contentColor = Color(0xFF121212),
+        borderColor = MaterialTheme.colorScheme.outline,
+        onClick = { showDetailDialog = true }
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    task.title,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Black),
+                    color = Color(0xFF121212),
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    stringResource(R.string.field_deadline) + ": " +
+                        TimeUtils.formatTime(task.deadline ?: 0L),
+                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
+                    color = Color(0xFF2C2C2C)
+                )
+            }
+            Spacer(Modifier.width(8.dp))
+            com.mother.app.ui.components.NeoPriorityBadge(priority = task.priority)
+        }
+    }
+
+    if (showDetailDialog) {
+        TaskDetailDialog(
+            task = task,
+            onEdit = onEdit,
+            onDismiss = { showDetailDialog = false }
+        )
+    }
+}
+

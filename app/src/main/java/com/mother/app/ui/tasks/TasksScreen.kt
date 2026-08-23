@@ -55,6 +55,7 @@ import com.mother.app.data.model.Priority
 import com.mother.app.ui.components.EmptyState
 import com.mother.app.ui.components.NeoCard
 import com.mother.app.ui.components.NeoPriorityBadge
+import com.mother.app.ui.components.TaskDetailDialog
 import com.mother.app.ui.theme.NeoShadowColor
 import com.mother.app.ui.theme.PriorityAman
 import com.mother.app.ui.theme.PriorityMepet
@@ -273,65 +274,10 @@ private fun TaskRow(task: TaskEntity, onEdit: () -> Unit = {}) {
     }
 
     if (showDetailDialog) {
-        androidx.compose.material3.AlertDialog(
-            onDismissRequest = { showDetailDialog = false },
-            title = {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = task.title,
-                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black)
-                    )
-                    NeoPriorityBadge(priority = task.priority)
-                }
-            },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    if (!task.description.isNullOrBlank()) {
-                        Column {
-                            Text(
-                                text = "Deskripsi:",
-                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                            Spacer(Modifier.height(4.dp))
-                            Text(
-                                text = task.description,
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-                        }
-                    } else {
-                        Text(
-                            text = "Tidak ada deskripsi tambahan.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    task.deadline?.let {
-                        Text(
-                            text = "Deadline: " + TimeUtils.formatFullDate(it),
-                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold)
-                        )
-                    }
-                }
-            },
-            confirmButton = {
-                com.mother.app.ui.components.NeoButton(
-                    text = "Edit Tugas",
-                    onClick = {
-                        showDetailDialog = false
-                        onEdit()
-                    }
-                )
-            },
-            dismissButton = {
-                androidx.compose.material3.TextButton(onClick = { showDetailDialog = false }) {
-                    Text("Tutup")
-                }
-            }
+        TaskDetailDialog(
+            task = task,
+            onEdit = onEdit,
+            onDismiss = { showDetailDialog = false }
         )
     }
 }
