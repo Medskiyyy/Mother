@@ -1,7 +1,10 @@
 package com.mother.app.ui.screens
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -9,17 +12,16 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -38,9 +40,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -52,15 +58,18 @@ import com.mother.app.data.model.Priority
 import com.mother.app.data.model.StatusTask
 import com.mother.app.data.reminder.ReminderScheduler
 import com.mother.app.data.repository.CategoryRepository
+import com.mother.app.data.repository.ReminderRepository
 import com.mother.app.data.repository.TaskRepository
 import com.mother.app.di.AppContainer
+import com.mother.app.ui.components.NeoButton
+import com.mother.app.ui.components.NeoPriorityBadge
+import com.mother.app.util.PriorityUtils
 import com.mother.app.util.TimeUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.UUID
-import com.mother.app.ui.components.NeoButton
 
 data class CreateTaskUiState(
     val title: String = "",
@@ -81,7 +90,7 @@ class CreateTaskViewModel(
     private val context: android.content.Context,
     private val taskRepository: TaskRepository,
     private val categoryRepository: CategoryRepository,
-    private val reminderRepository: com.mother.app.data.repository.ReminderRepository,
+    private val reminderRepository: ReminderRepository,
     private val taskId: String?,
     private val onSaved: () -> Unit
 ) : ViewModel() {
@@ -99,13 +108,21 @@ class CreateTaskViewModel(
             viewModelScope.launch {
                 val existing = taskRepository.getById(taskId)
                 if (existing != null) {
+                    val existingReminders = reminderRepository.getAllTaskReminders().filter { it.taskId == taskId }
+                    val offsets = if (existing.deadline != null) {
+                        existingReminders.map { ((existing.deadline - it.triggerTime) / 60_000L).toInt() }.toSet()
+                    } else {
+                        emptySet()
+                    }
+                    val autoPriority = PriorityUtils.calculatePriority(existing.deadline)
                     _uiState.update {
                         it.copy(
                             title = existing.title,
                             description = existing.description ?: "",
-                            priority = existing.priority,
+                            priority = autoPriority,
                             deadline = existing.deadline,
-                            categoryId = existing.categoryId
+                            categoryId = existing.categoryId,
+                            reminderOffsets = offsets
                         )
                     }
                 }
@@ -119,9 +136,6 @@ class CreateTaskViewModel(
     fun onDescriptionChange(value: String) =
         _uiState.update { it.copy(description = value) }
 
-    fun onPriorityChange(value: Priority) =
-        _uiState.update { it.copy(priority = value) }
-
     fun openCategoryPicker() = _uiState.update { it.copy(showCategoryPicker = true) }
 
     fun closeCategoryPicker() = _uiState.update { it.copy(showCategoryPicker = false) }
@@ -129,7 +143,10 @@ class CreateTaskViewModel(
     fun selectCategory(category: CategoryEntity) =
         _uiState.update { it.copy(categoryId = category.id, showCategoryPicker = false, categoryError = false) }
 
-    fun onDeadlineChange(value: Long?) = _uiState.update { it.copy(deadline = value) }
+    fun onDeadlineChange(value: Long?) = _uiState.update {
+        val autoPriority = PriorityUtils.calculatePriority(value)
+        it.copy(deadline = value, priority = autoPriority)
+    }
 
     fun toggleReminderOffset(offset: Int) = _uiState.update { state ->
         val offsets = state.reminderOffsets.toMutableSet()
@@ -137,9 +154,15 @@ class CreateTaskViewModel(
         state.copy(reminderOffsets = offsets)
     }
 
+    fun setReminderOffsets(offsets: Set<Int>) = _uiState.update {
+        it.copy(reminderOffsets = offsets)
+    }
+
     fun deleteTask() {
         if (taskId == null) return
         viewModelScope.launch {
+            val oldReminders = reminderRepository.getAllTaskReminders().filter { it.taskId == taskId }
+            oldReminders.forEach { ReminderScheduler.cancel(context, ReminderScheduler.OWNER_TASK, taskId, it.id) }
             taskRepository.deleteById(taskId)
             onSaved()
         }
@@ -158,13 +181,14 @@ class CreateTaskViewModel(
             try {
                 val now = System.currentTimeMillis()
                 val targetId = taskId ?: UUID.randomUUID().toString()
+                val autoPriority = PriorityUtils.calculatePriority(state.deadline, now)
                 taskRepository.upsert(
                     TaskEntity(
                         id = targetId,
                         title = state.title.trim(),
                         description = state.description.trim().ifBlank { null },
                         categoryId = state.categoryId!!,
-                        priority = state.priority,
+                        priority = autoPriority,
                         deadline = state.deadline,
                         status = StatusTask.ACTIVE,
                         note = null,
@@ -173,6 +197,13 @@ class CreateTaskViewModel(
                         updatedAt = now
                     )
                 )
+
+                // Cancel old reminders before saving new set
+                val oldReminders = reminderRepository.getAllTaskReminders().filter { it.taskId == targetId }
+                oldReminders.forEach {
+                    ReminderScheduler.cancel(context, ReminderScheduler.OWNER_TASK, targetId, it.id)
+                }
+
                 val deadline = state.deadline
                 if (deadline != null) {
                     state.reminderOffsets.forEach { offset ->
@@ -230,9 +261,10 @@ fun CreateTaskScreen(
     val state by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    state.errorMessage?.let { message ->
-        LaunchedEffect(message) {
-            snackbarHostState.showSnackbar(message)
+    val errorMessage = state.errorMessage
+    LaunchedEffect(errorMessage) {
+        if (errorMessage != null) {
+            snackbarHostState.showSnackbar(errorMessage)
             viewModel.refresh()
         }
     }
@@ -241,10 +273,19 @@ fun CreateTaskScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text(if (taskId != null) "Edit Tugas" else stringResource(R.string.create_task_title)) },
+                title = {
+                    Text(
+                        stringResource(
+                            if (taskId != null) R.string.create_task_title else R.string.create_task_title
+                        )
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onCancelled) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.form_cancel))
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.form_cancel)
+                        )
                     }
                 },
                 actions = {
@@ -283,10 +324,10 @@ fun CreateTaskScreen(
                 minLines = 2,
                 modifier = Modifier.fillMaxWidth()
             )
-            PriorityDropdown(
-                selected = state.priority,
-                onSelected = viewModel::onPriorityChange
-            )
+
+            // Auto Priority Display Card
+            AutoPriorityCard(priority = state.priority)
+
             DeadlineRow(
                 deadline = state.deadline,
                 onPicked = { viewModel.onDeadlineChange(it) },
@@ -302,7 +343,9 @@ fun CreateTaskScreen(
             if (state.deadline != null) {
                 ReminderSelector(
                     selectedOffsets = state.reminderOffsets,
-                    onToggleOffset = viewModel::toggleReminderOffset
+                    onToggleOffset = viewModel::toggleReminderOffset,
+                    onSetOffsets = viewModel::setReminderOffsets,
+                    deadline = state.deadline
                 )
             }
             Spacer(Modifier.height(4.dp))
@@ -324,31 +367,38 @@ fun CreateTaskScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun PriorityDropdown(selected: Priority, onSelected: (Priority) -> Unit) {
-    var expanded by remember { mutableStateOf(false) }
-    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
-        OutlinedTextField(
-            value = priorityLabel(selected),
-            onValueChange = {},
-            readOnly = true,
-            label = { Text(stringResource(R.string.field_priority)) },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            modifier = Modifier
-                .menuAnchor()
-                .fillMaxWidth()
-        )
-        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            Priority.entries.forEach { priority ->
-                DropdownMenuItem(
-                    text = { Text(priorityLabel(priority)) },
-                    onClick = {
-                        onSelected(priority)
-                        expanded = false
-                    }
+internal fun AutoPriorityCard(priority: Priority) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .border(1.5.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp))
+            .padding(12.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.field_priority),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = stringResource(R.string.priority_auto_description),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 11.sp
                 )
             }
+            Spacer(Modifier.width(8.dp))
+            NeoPriorityBadge(priority = priority)
         }
     }
 }
@@ -380,16 +430,22 @@ internal fun DeadlineRow(
             }
         }
     }
+
     if (showDatePicker) {
-        val datePickerState = rememberDatePickerState(initialSelectedDateMillis = deadline)
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = deadline ?: System.currentTimeMillis()
+        )
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
-                TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let(onPicked)
-                    showDatePicker = false
-                }) {
-                    Text(stringResource(android.R.string.ok))
+                TextButton(
+                    onClick = {
+                        val millis = datePickerState.selectedDateMillis
+                        if (millis != null) onPicked(millis)
+                        showDatePicker = false
+                    }
+                ) {
+                    Text(stringResource(R.string.dialog_pick))
                 }
             },
             dismissButton = {
@@ -412,22 +468,18 @@ internal fun CategoryRow(
 ) {
     val selected = categories.firstOrNull { it.id == selectedId }
     val label = selected?.name ?: stringResource(R.string.field_not_selected)
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(onClick = onOpenPicker)
-                .padding(vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column {
-                Text(stringResource(R.string.field_category), style = MaterialTheme.typography.labelMedium)
-                Text(label, style = MaterialTheme.typography.bodyLarge)
-            }
-            TextButton(onClick = onOpenPicker) {
-                Text(stringResource(R.string.dialog_pick))
-            }
-        }
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onOpenPicker)
+            .padding(vertical = 8.dp)
+    ) {
+        Text(stringResource(R.string.field_category), style = MaterialTheme.typography.labelMedium)
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+            color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+        )
         if (isError) {
             Text(
                 text = stringResource(R.string.error_category_required),

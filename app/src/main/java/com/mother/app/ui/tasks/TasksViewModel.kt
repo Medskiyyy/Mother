@@ -43,12 +43,18 @@ class TasksViewModel(private val taskRepository: TaskRepository) : ViewModel() {
     init {
         viewModelScope.launch {
             taskRepository.observeActiveTasks().collect { tasks ->
-                _uiState.update { it.copy(activeTasks = tasks) }
+                val dynamicTasks = tasks.map {
+                    it.copy(priority = com.mother.app.util.PriorityUtils.calculatePriority(it.deadline))
+                }
+                _uiState.update { it.copy(activeTasks = dynamicTasks) }
             }
         }
         viewModelScope.launch {
             taskRepository.observeByStatus("COMPLETED").collect { tasks ->
-                _uiState.update { it.copy(completedTasks = tasks) }
+                val dynamicTasks = tasks.map {
+                    it.copy(priority = com.mother.app.util.PriorityUtils.calculatePriority(it.deadline))
+                }
+                _uiState.update { it.copy(completedTasks = dynamicTasks) }
             }
         }
     }

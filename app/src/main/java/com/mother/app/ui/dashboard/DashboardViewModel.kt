@@ -128,6 +128,9 @@ class DashboardViewModel(
                 val dayEndMs = TimeUtils.endOfDay(dayStartMs)
 
                 val todaySchedules = data.schedules.filter { it.startTime in dayStartMs..<dayEndMs }
+                val dynamicDeadlines = data.deadlines.map {
+                    it.copy(priority = com.mother.app.util.PriorityUtils.calculatePriority(it.deadline, currentTime))
+                }
 
                 DashboardUiState(
                     isLoading = false,
@@ -137,7 +140,7 @@ class DashboardViewModel(
                     streak = TimeUtils.computeStreak(data.sessions.map { it.startTime }),
                     todayStudyMinutes = data.studyMin,
                     dailyTargetMinutes = targetMinutes,
-                    deadlines = data.deadlines,
+                    deadlines = dynamicDeadlines,
                     todaySchedule = todaySchedules
                 )
             }

@@ -187,6 +187,14 @@
     <string name="reminder_at_time">Saat dimulai</string>
     <string name="reminder_minutes_before">%1$d menit sebelumnya</string>
     <string name="reminder_hours_before">%1$d jam sebelumnya</string>
+    <string name="reminder_days_before">%1$d hari sebelumnya</string>
+    <string name="reminder_weeks_before">%1$d minggu sebelumnya</string>
+    <string name="reminder_daily_until_deadline">Setiap hari menuju deadline</string>
+    <string name="unit_minutes">Menit</string>
+    <string name="unit_hours">Jam</string>
+    <string name="unit_days">Hari</string>
+    <string name="priority_auto_description">Prioritas otomatis dihitung dari sisa waktu menuju deadline.</string>
+    <string name="priority_auto_tag">Otomatis</string>
     <string name="permission_notification_denied">Pengingat tidak akan bekerja tanpa izin notifikasi. Aktifkan izin notifikasi di pengaturan sistem untuk menerima pengingat.</string>
 
     <!-- Missed Alarm / Reminder -->
