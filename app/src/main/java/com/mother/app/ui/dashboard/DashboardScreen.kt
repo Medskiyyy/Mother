@@ -185,12 +185,12 @@ private fun Header(greeting: String, dateLabel: String, onSearch: () -> Unit) {
 /** Streak Hero Card: Bold Neobrutalist Block with flame badge & giant number */
 @Composable
 private fun StreakCard(streak: Int) {
-    val isDark = androidx.compose.foundation.isSystemInDarkTheme()
-    val bgColor = if (isDark) Color(0xFF262215) else NeoStreakYellow
-    val borderColor = if (isDark) Color(0xFF6B581B) else MaterialTheme.colorScheme.outline
-    val textColor = if (isDark) Color(0xFFFFEEB0) else Color(0xFF121212)
-    val badgeBg = if (isDark) Color(0xFF14120B) else Color(0xFF121212)
-    val badgeTint = if (isDark) Color(0xFFFFD15C) else NeoStreakYellow
+    val isDark = com.mother.app.ui.theme.isAppInDarkTheme()
+    val bgColor = if (isDark) com.mother.app.ui.theme.DarkColors.StreakCardBg else com.mother.app.ui.theme.LightColors.StreakCardBg
+    val borderColor = if (isDark) com.mother.app.ui.theme.DarkColors.StreakCardBorder else com.mother.app.ui.theme.LightColors.Outline
+    val textColor = if (isDark) com.mother.app.ui.theme.DarkColors.StreakCardText else com.mother.app.ui.theme.LightColors.StreakCardText
+    val badgeBg = if (isDark) com.mother.app.ui.theme.DarkColors.StreakBadgeBg else com.mother.app.ui.theme.LightColors.StreakBadgeBg
+    val badgeTint = if (isDark) com.mother.app.ui.theme.DarkColors.StreakBadgeTint else com.mother.app.ui.theme.LightColors.StreakBadgeTint
 
     NeoCard(
         modifier = Modifier.fillMaxWidth(),

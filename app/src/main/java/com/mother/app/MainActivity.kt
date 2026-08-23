@@ -334,7 +334,7 @@ class MainActivity : ComponentActivity() {
                 if (isTopLevel && !isFocusMode) {
                     NeoCard(
                         onClick = { showQuickAdd = true },
-                        containerColor = if (androidx.compose.foundation.isSystemInDarkTheme()) Color(0xFFFFD15C) else Color(0xFFFFD60A),
+                        containerColor = if (com.mother.app.ui.theme.isAppInDarkTheme()) com.mother.app.ui.theme.DarkColors.SolidYellow else com.mother.app.ui.theme.LightColors.SolidYellow,
                         contentColor = Color(0xFF121212),
                         borderColor = MaterialTheme.colorScheme.outline
                     ) {

@@ -211,7 +211,7 @@ fun NeoPriorityBadge(
     modifier: Modifier = Modifier
 ) {
     val palette = com.mother.app.ui.theme.getPriorityPalette(priority)
-    val isDark = androidx.compose.foundation.isSystemInDarkTheme()
+    val isDark = com.mother.app.ui.theme.isAppInDarkTheme()
     val borderColor = if (isDark) palette.cardBorder else Color(0xFF121212)
 
     Box(
