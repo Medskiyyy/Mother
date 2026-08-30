@@ -39,6 +39,16 @@ class ReminderReceiver : BroadcastReceiver() {
     }
 
     private fun handleRing(context: Context, ownerType: String, ownerId: String, reminderId: String) {
+        val pm = context.getSystemService(Context.POWER_SERVICE) as? android.os.PowerManager
+        @Suppress("DEPRECATION")
+        val ringWakeLock = pm?.newWakeLock(
+            android.os.PowerManager.SCREEN_BRIGHT_WAKE_LOCK or
+                android.os.PowerManager.ACQUIRE_CAUSES_WAKEUP or
+                android.os.PowerManager.ON_AFTER_RELEASE,
+            "Mother:ReminderRingWakeLock"
+        )
+        ringWakeLock?.acquire(10_000L)
+
         val pending = goAsync()
         val container = (context.applicationContext as MotherApplication).container
         CoroutineScope(Dispatchers.IO).launch {

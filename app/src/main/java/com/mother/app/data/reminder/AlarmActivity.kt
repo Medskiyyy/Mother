@@ -97,6 +97,16 @@ class AlarmActivity : ComponentActivity() {
         }
     }
 
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        turnScreenOnAndShowWhenLocked()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        turnScreenOnAndShowWhenLocked()
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)

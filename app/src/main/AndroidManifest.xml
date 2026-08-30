@@ -52,6 +52,7 @@
             android:showOnLockScreen="true"
             android:showForAllUsers="true"
             android:excludeFromRecents="true"
+            android:taskAffinity="com.mother.app.alarm"
             android:launchMode="singleInstance"
             android:theme="@style/Theme.Mother" />
 

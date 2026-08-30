@@ -59,14 +59,16 @@ class HabitAlarmService : Service() {
         // Cancel previous timeout if any
         timeoutJob?.cancel()
 
-        // Acquire WakeLock to keep device awake
+        // Acquire WakeLock with SCREEN_BRIGHT and ACQUIRE_CAUSES_WAKEUP to immediately turn on physical screen
         wakeLock?.let { if (it.isHeld) it.release() }
         val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
         @Suppress("DEPRECATION")
         wakeLock = pm.newWakeLock(
-            PowerManager.PARTIAL_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP,
+            PowerManager.SCREEN_BRIGHT_WAKE_LOCK or
+                PowerManager.ACQUIRE_CAUSES_WAKEUP or
+                PowerManager.ON_AFTER_RELEASE,
             "Mother:HabitAlarmWakeLock"
-        ).also { it.acquire(5 * 60_000L) }
+        ).also { it.acquire(ALARM_TIMEOUT_MS) }
 
         // Create notification channel for alarm
         ensureAlarmChannel()
@@ -129,13 +131,19 @@ class HabitAlarmService : Service() {
         if (channel == null) {
             channel = NotificationChannel(
                 ALARM_CHANNEL_ID,
-                "Alarm Kebiasaan",
+                "Alarm Layar Penuh Kebiasaan",
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Alarm layar penuh untuk pengingat kebiasaan"
-                // Sound and vibration are managed exclusively by HabitAlarmService's MediaPlayer & Vibrator
-                setSound(null, null)
-                enableVibration(false)
+                description = "Layar penuh dan alarm untuk pengingat kebiasaan"
+                val soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+                    ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+                val audioAttributes = AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_ALARM)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build()
+                setSound(soundUri, audioAttributes)
+                enableVibration(true)
+                vibrationPattern = longArrayOf(0, 1000, 500, 1000)
                 setBypassDnd(true)
                 lockscreenVisibility = Notification.VISIBILITY_PUBLIC
             }
@@ -176,7 +184,6 @@ class HabitAlarmService : Service() {
             .setContentText("Waktunya membangun kebiasaan!")
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setPriority(NotificationCompat.PRIORITY_MAX)
-            .setSound(null)
             .setOngoing(true)
             .setAutoCancel(false)
             .setFullScreenIntent(fullScreenPI, true)
@@ -257,7 +264,7 @@ class HabitAlarmService : Service() {
     }
 
     companion object {
-        const val ALARM_CHANNEL_ID = "mother_habit_alarm_v3_silent"
+        const val ALARM_CHANNEL_ID = "mother_habit_alarm_v4_fullscreen"
         const val ALARM_NOTIFICATION_ID = 99999
         const val ACTION_STOP = "com.mother.app.action.STOP_HABIT_ALARM"
         const val ALARM_TIMEOUT_MS = 90_000L // 90 seconds timeout
