@@ -63,6 +63,25 @@ class ReminderReceiver : BroadcastReceiver() {
                     } else {
                         context.startService(serviceIntent)
                     }
+
+                    // Directly start AlarmActivity from AlarmClock broadcast
+                    val alarmIntent = Intent(context, AlarmActivity::class.java).apply {
+                        putExtra(ReminderScheduler.EXTRA_OWNER_TYPE, ownerType)
+                        putExtra(ReminderScheduler.EXTRA_OWNER_ID, ownerId)
+                        putExtra(ReminderScheduler.EXTRA_REMINDER_ID, reminderId)
+                        putExtra("title", title)
+                        addFlags(
+                            Intent.FLAG_ACTIVITY_NEW_TASK or
+                                Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                                Intent.FLAG_ACTIVITY_SINGLE_TOP or
+                                Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+                        )
+                    }
+                    try {
+                        context.startActivity(alarmIntent)
+                    } catch (e: Exception) {
+                        android.util.Log.d("ReminderReceiver", "Direct startActivity from receiver failed: ${e.message}")
+                    }
                     // Re-schedule for the next day preserving exact wall-clock time
                     val habitReminder = container.reminderRepository.getHabitReminder(reminderId)
                     val nextTrigger = if (habitReminder != null) {

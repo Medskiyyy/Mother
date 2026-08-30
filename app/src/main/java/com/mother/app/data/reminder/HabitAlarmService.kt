@@ -73,7 +73,34 @@ class HabitAlarmService : Service() {
 
         // Build full-screen notification
         val notification = buildAlarmNotification(ownerType, ownerId, reminderId, title)
-        startForeground(ALARM_NOTIFICATION_ID, notification)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(
+                ALARM_NOTIFICATION_ID,
+                notification,
+                android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
+            )
+        } else {
+            startForeground(ALARM_NOTIFICATION_ID, notification)
+        }
+
+        // Direct Activity Launch for instant full-screen alarm (covers locked & unlocked states)
+        val alarmIntent = Intent(this, AlarmActivity::class.java).apply {
+            putExtra(ReminderScheduler.EXTRA_OWNER_TYPE, ownerType)
+            putExtra(ReminderScheduler.EXTRA_OWNER_ID, ownerId)
+            putExtra(ReminderScheduler.EXTRA_REMINDER_ID, reminderId)
+            putExtra("title", title)
+            addFlags(
+                Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                    Intent.FLAG_ACTIVITY_SINGLE_TOP or
+                    Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+            )
+        }
+        try {
+            startActivity(alarmIntent)
+        } catch (e: Exception) {
+            android.util.Log.e("HabitAlarmService", "Failed to direct startActivity: ${e.message}")
+        }
 
         // Start loud alarm sound + vibration
         startAlarmSound()
@@ -98,20 +125,22 @@ class HabitAlarmService : Service() {
 
     private fun ensureAlarmChannel() {
         val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        // Always recreate to ensure alarm config is applied
-        nm.deleteNotificationChannel(ALARM_CHANNEL_ID)
-        val channel = NotificationChannel(
-            ALARM_CHANNEL_ID,
-            "Alarm Kebiasaan",
-            NotificationManager.IMPORTANCE_HIGH
-        ).apply {
-            // Sound and vibration are managed exclusively by HabitAlarmService's MediaPlayer & Vibrator
-            setSound(null, null)
-            enableVibration(false)
-            setBypassDnd(true)
-            lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+        var channel = nm.getNotificationChannel(ALARM_CHANNEL_ID)
+        if (channel == null) {
+            channel = NotificationChannel(
+                ALARM_CHANNEL_ID,
+                "Alarm Kebiasaan",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Alarm layar penuh untuk pengingat kebiasaan"
+                // Sound and vibration are managed exclusively by HabitAlarmService's MediaPlayer & Vibrator
+                setSound(null, null)
+                enableVibration(false)
+                setBypassDnd(true)
+                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+            }
+            nm.createNotificationChannel(channel)
         }
-        nm.createNotificationChannel(channel)
     }
 
     private fun buildAlarmNotification(
@@ -142,7 +171,7 @@ class HabitAlarmService : Service() {
         )
 
         return NotificationCompat.Builder(this, ALARM_CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle(title)
             .setContentText("Waktunya membangun kebiasaan!")
             .setCategory(NotificationCompat.CATEGORY_ALARM)

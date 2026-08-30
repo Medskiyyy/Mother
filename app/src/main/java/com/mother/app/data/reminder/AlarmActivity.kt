@@ -6,6 +6,8 @@ import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -55,38 +57,24 @@ import kotlinx.coroutines.launch
  */
 class AlarmActivity : ComponentActivity() {
 
+    private val titleState = kotlinx.coroutines.flow.MutableStateFlow("Waktunya Kebiasaan!")
+    private var currentOwnerType = ""
+    private var currentOwnerId = ""
+    private var currentReminderId = ""
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // Wake screen & show over lockscreen
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
-            setShowWhenLocked(true)
-            setTurnScreenOn(true)
-        } else {
-            @Suppress("DEPRECATION")
-            window.addFlags(
-                android.view.WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
-                        android.view.WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
-                        android.view.WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD or
-                        android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
-            )
-        }
-
-        @Suppress("DEPRECATION")
-        window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-
-        val ownerType = intent.getStringExtra(ReminderScheduler.EXTRA_OWNER_TYPE) ?: ""
-        val ownerId = intent.getStringExtra(ReminderScheduler.EXTRA_OWNER_ID) ?: ""
-        val reminderId = intent.getStringExtra(ReminderScheduler.EXTRA_REMINDER_ID) ?: ""
-        val title = intent.getStringExtra("title") ?: "Waktunya Kebiasaan!"
+        turnScreenOnAndShowWhenLocked()
+        extractIntentData(intent)
 
         setContent {
+            val title by titleState.collectAsState()
             MotherTheme {
                 AlarmScreen(
                     title = title,
                     onStart = {
                         HabitAlarmService.stop(this)
-                        dismissReminder(reminderId)
+                        dismissReminder(currentReminderId)
                         val openIntent = Intent(this, MainActivity::class.java).apply {
                             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
                         }
@@ -95,17 +83,52 @@ class AlarmActivity : ComponentActivity() {
                     },
                     onSnooze = {
                         HabitAlarmService.stop(this)
-                        dismissReminder(reminderId)
-                        snoozeReminder(ownerType, ownerId, reminderId)
+                        dismissReminder(currentReminderId)
+                        snoozeReminder(currentOwnerType, currentOwnerId, currentReminderId)
                         finish()
                     },
                     onSkip = {
                         HabitAlarmService.stop(this)
-                        dismissReminder(reminderId)
+                        dismissReminder(currentReminderId)
                         finish()
                     }
                 )
             }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        turnScreenOnAndShowWhenLocked()
+        extractIntentData(intent)
+    }
+
+    private fun extractIntentData(intent: Intent?) {
+        if (intent == null) return
+        currentOwnerType = intent.getStringExtra(ReminderScheduler.EXTRA_OWNER_TYPE) ?: ""
+        currentOwnerId = intent.getStringExtra(ReminderScheduler.EXTRA_OWNER_ID) ?: ""
+        currentReminderId = intent.getStringExtra(ReminderScheduler.EXTRA_REMINDER_ID) ?: ""
+        val title = intent.getStringExtra("title") ?: "Waktunya Kebiasaan!"
+        titleState.value = title
+    }
+
+    private fun turnScreenOnAndShowWhenLocked() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            setShowWhenLocked(true)
+            setTurnScreenOn(true)
+        }
+        @Suppress("DEPRECATION")
+        window.addFlags(
+            android.view.WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
+                android.view.WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
+                android.view.WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD or
+                android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON or
+                android.view.WindowManager.LayoutParams.FLAG_ALLOW_LOCK_WHILE_SCREEN_ON
+        )
+        val keyguardManager = getSystemService(Context.KEYGUARD_SERVICE) as? android.app.KeyguardManager
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            keyguardManager?.requestDismissKeyguard(this, null)
         }
     }
 
