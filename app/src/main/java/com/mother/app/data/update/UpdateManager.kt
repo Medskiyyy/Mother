@@ -72,6 +72,7 @@ class UpdateManager(
         _updateState.value = UpdateState.Downloading(release, 0)
         try {
             val updatesDir = File(context.cacheDir, "updates").apply { mkdirs() }
+            updatesDir.listFiles()?.forEach { it.delete() }
             val apkFile = File(updatesDir, release.apkFileName)
 
             var connection = openHttpConnection(release.apkDownloadUrl)
@@ -159,6 +160,22 @@ class UpdateManager(
 
     fun dismiss() {
         _updateState.value = UpdateState.Idle
+    }
+
+    /**
+     * Cleans up all leftover APK files from previous update downloads in cache.
+     */
+    fun cleanOldUpdates() {
+        try {
+            val updatesDir = File(context.cacheDir, "updates")
+            if (updatesDir.exists()) {
+                updatesDir.listFiles()?.forEach { file ->
+                    file.delete()
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("MotherUpdate", "Failed to clean old updates: ${e.message}")
+        }
     }
 
     private fun openHttpConnection(urlString: String): HttpURLConnection {

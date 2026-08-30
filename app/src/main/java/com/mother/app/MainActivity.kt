@@ -238,6 +238,7 @@ class MainActivity : ComponentActivity() {
         val updateState by updateManager.updateState.collectAsStateWithLifecycle()
 
         LaunchedEffect(Unit) {
+            updateManager.cleanOldUpdates()
             updateManager.checkForUpdates(isManualCheck = false)
         }
 
