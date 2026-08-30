@@ -35,7 +35,7 @@ object ReminderScheduler {
             return
         }
         val alarmManager = context.getSystemService<AlarmManager>() ?: return
-        val pendingIntent = buildPendingIntent(context, ownerType, ownerId, reminderId)
+        val pendingIntent = buildPendingIntent(context, ownerType, ownerId, reminderId) ?: return
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
             alarmManager.set(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
         } else {
@@ -51,7 +51,7 @@ object ReminderScheduler {
      */
     private fun scheduleAlarmClock(context: Context, ownerType: String, ownerId: String, reminderId: String, triggerTime: Long) {
         val alarmManager = context.getSystemService<AlarmManager>() ?: return
-        val pendingIntent = buildPendingIntent(context, ownerType, ownerId, reminderId)
+        val pendingIntent = buildPendingIntent(context, ownerType, ownerId, reminderId) ?: return
         val showIntent = PendingIntent.getActivity(
             context, requestCode(reminderId),
             Intent(context, AlarmActivity::class.java),
@@ -78,7 +78,7 @@ object ReminderScheduler {
             return
         }
         val alarmManager = context.getSystemService<AlarmManager>() ?: return
-        val pendingIntent = buildPendingIntent(context, ownerType, ownerId, reminderId)
+        val pendingIntent = buildPendingIntent(context, ownerType, ownerId, reminderId) ?: return
         alarmManager.setRepeating(
             AlarmManager.RTC_WAKEUP,
             triggerTime,
@@ -88,17 +88,21 @@ object ReminderScheduler {
     }
 
     fun cancel(context: Context, ownerType: String, ownerId: String, reminderId: String) {
-        val alarmManager = context.getSystemService<AlarmManager>() ?: return
-        val pendingIntent = buildPendingIntent(
-            context,
-            ownerType,
-            ownerId,
-            reminderId,
-            flags = PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
-        )
-        if (pendingIntent != null) {
-            alarmManager.cancel(pendingIntent)
-            pendingIntent.cancel()
+        try {
+            val alarmManager = context.getSystemService<AlarmManager>() ?: return
+            val pendingIntent = buildPendingIntent(
+                context,
+                ownerType,
+                ownerId,
+                reminderId,
+                flags = PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+            )
+            if (pendingIntent != null) {
+                alarmManager.cancel(pendingIntent)
+                pendingIntent.cancel()
+            }
+        } catch (_: Exception) {
+            // Safe guard against any Android OS AlarmManager or PendingIntent exceptions
         }
     }
 
@@ -108,7 +112,7 @@ object ReminderScheduler {
         ownerId: String,
         reminderId: String,
         flags: Int = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-    ): PendingIntent {
+    ): PendingIntent? {
         val intent = Intent(context, ReminderReceiver::class.java).apply {
             putExtra(EXTRA_OWNER_TYPE, ownerType)
             putExtra(EXTRA_OWNER_ID, ownerId)

@@ -29,8 +29,10 @@ import com.mother.app.data.repository.TaskRepositoryImpl
  */
 class AppContainer(context: Context) {
 
+    val appContext: Context = context.applicationContext
+
     private val database: AppDatabase by lazy {
-        AppDatabase.build(context.applicationContext)
+        AppDatabase.build(appContext)
     }
 
     val categoryRepository: CategoryRepository by lazy {

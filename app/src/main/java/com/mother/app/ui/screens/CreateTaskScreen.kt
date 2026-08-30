@@ -162,10 +162,19 @@ class CreateTaskViewModel(
     fun deleteTask() {
         if (taskId == null) return
         viewModelScope.launch {
-            val oldReminders = reminderRepository.getAllTaskReminders().filter { it.taskId == taskId }
-            oldReminders.forEach { ReminderScheduler.cancel(context, ReminderScheduler.OWNER_TASK, taskId, it.id) }
-            taskRepository.deleteById(taskId)
-            onSaved()
+            try {
+                val oldReminders = reminderRepository.getAllTaskReminders().filter { it.taskId == taskId }
+                oldReminders.forEach { ReminderScheduler.cancel(context, ReminderScheduler.OWNER_TASK, taskId, it.id) }
+                reminderRepository.deleteTaskReminders(taskId)
+            } catch (e: Exception) {
+                android.util.Log.w("CreateTask", "Failed to cancel reminders: ${e.message}")
+            }
+            try {
+                taskRepository.deleteById(taskId)
+                onSaved()
+            } catch (e: Exception) {
+                _uiState.update { it.copy(errorMessage = "Gagal menghapus tugas: ${e.message}") }
+            }
         }
     }
 

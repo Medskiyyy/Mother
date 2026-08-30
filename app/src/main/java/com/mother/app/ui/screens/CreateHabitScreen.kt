@@ -152,18 +152,26 @@ class CreateHabitViewModel(
     fun deleteHabit() {
         if (habitId == null) return
         viewModelScope.launch {
-            val oldReminders = reminderRepository.getAllHabitReminders().filter { it.habitId == habitId }
-            oldReminders.forEach { old ->
-                ReminderScheduler.cancel(
-                    context,
-                    ReminderScheduler.OWNER_HABIT,
-                    habitId,
-                    old.id
-                )
+            try {
+                val oldReminders = reminderRepository.getAllHabitReminders().filter { it.habitId == habitId }
+                oldReminders.forEach { old ->
+                    ReminderScheduler.cancel(
+                        context,
+                        ReminderScheduler.OWNER_HABIT,
+                        habitId,
+                        old.id
+                    )
+                }
+                reminderRepository.deleteHabitReminders(habitId)
+            } catch (e: Exception) {
+                android.util.Log.w("CreateHabit", "Failed to cancel reminders: ${e.message}")
             }
-            reminderRepository.deleteHabitReminders(habitId)
-            habitRepository.deleteById(habitId)
-            onSaved()
+            try {
+                habitRepository.deleteById(habitId)
+                onSaved()
+            } catch (e: Exception) {
+                _uiState.update { it.copy(errorMessage = "Gagal menghapus kebiasaan: ${e.message}") }
+            }
         }
     }
 

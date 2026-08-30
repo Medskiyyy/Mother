@@ -216,12 +216,20 @@ private fun TaskSwipeRow(
             }
         }
     ) {
-        TaskRow(task = task, onEdit = { onEditTask?.invoke(task.id) })
+        TaskRow(
+            task = task,
+            onEdit = { onEditTask?.invoke(task.id) },
+            onDelete = { onDismissed(SwipeToDismissBoxValue.EndToStart) }
+        )
     }
 }
 
 @Composable
-private fun TaskRow(task: TaskEntity, onEdit: () -> Unit = {}) {
+private fun TaskRow(
+    task: TaskEntity,
+    onEdit: () -> Unit = {},
+    onDelete: (() -> Unit)? = null
+) {
     var showDetailDialog by remember { mutableStateOf(false) }
     val palette = com.mother.app.ui.theme.getPriorityPalette(task.priority)
 
@@ -271,6 +279,7 @@ private fun TaskRow(task: TaskEntity, onEdit: () -> Unit = {}) {
         TaskDetailDialog(
             task = task,
             onEdit = onEdit,
+            onDelete = onDelete,
             onDismiss = { showDetailDialog = false }
         )
     }

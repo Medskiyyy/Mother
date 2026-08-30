@@ -44,6 +44,10 @@ class ReminderReceiver : BroadcastReceiver() {
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val title = loadTitle(container.reminderRepository, container, ownerType, ownerId)
+                if (title.isBlank()) {
+                    // Owner entity has been deleted; do not ring or notify
+                    return@launch
+                }
                 if (ownerType == ReminderScheduler.OWNER_HABIT) {
                     // Start foreground service -- this is the ONLY reliable way to
                     // show a full-screen alarm on Android 10+. Direct startActivity

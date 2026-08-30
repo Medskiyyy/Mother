@@ -32,6 +32,7 @@ import com.mother.app.util.TimeUtils
 fun TaskDetailDialog(
     task: TaskEntity,
     onEdit: () -> Unit,
+    onDelete: (() -> Unit)? = null,
     onDismiss: () -> Unit
 ) {
     val dynamicPriority = PriorityUtils.calculatePriority(task.deadline)
@@ -100,8 +101,27 @@ fun TaskDetailDialog(
             )
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.dialog_close))
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (onDelete != null) {
+                    TextButton(
+                        onClick = {
+                            onDismiss()
+                            onDelete()
+                        }
+                    ) {
+                        Text(
+                            text = stringResource(R.string.action_delete),
+                            color = MaterialTheme.colorScheme.error,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+                TextButton(onClick = onDismiss) {
+                    Text(stringResource(R.string.dialog_close))
+                }
             }
         }
     )
@@ -115,6 +135,7 @@ fun TaskDetailDialog(
 fun ScheduleDetailDialog(
     schedule: ScheduleEntity,
     onEdit: () -> Unit,
+    onDelete: (() -> Unit)? = null,
     onDismiss: () -> Unit
 ) {
     AlertDialog(
@@ -155,13 +176,15 @@ fun ScheduleDetailDialog(
                 // Time Span
                 Column {
                     Text(
-                        text = stringResource(R.string.field_date) + " & " + stringResource(R.string.field_start_time) + ":",
+                        text = "Waktu:",
                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.primary
                     )
                     Spacer(Modifier.height(2.dp))
                     Text(
-                        text = "${TimeUtils.formatFullDate(schedule.startTime)} (${TimeUtils.formatTime(schedule.startTime)} - ${TimeUtils.formatTime(schedule.endTime)})",
+                        text = TimeUtils.formatFullDate(schedule.startTime) + " (" +
+                            TimeUtils.formatTime(schedule.startTime) + " - " +
+                            TimeUtils.formatTime(schedule.endTime) + ")",
                         style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
                     )
                 }
@@ -215,8 +238,27 @@ fun ScheduleDetailDialog(
             )
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.dialog_close))
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (onDelete != null) {
+                    TextButton(
+                        onClick = {
+                            onDismiss()
+                            onDelete()
+                        }
+                    ) {
+                        Text(
+                            text = stringResource(R.string.action_delete),
+                            color = MaterialTheme.colorScheme.error,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+                TextButton(onClick = onDismiss) {
+                    Text(stringResource(R.string.dialog_close))
+                }
             }
         }
     )

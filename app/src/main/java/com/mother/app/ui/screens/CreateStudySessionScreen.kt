@@ -14,6 +14,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -154,6 +155,18 @@ class CreateStudySessionViewModel(
         }
     }
 
+    fun deleteSession() {
+        if (sessionId == null) return
+        viewModelScope.launch {
+            try {
+                studySessionRepository.deleteById(sessionId)
+                onSaved()
+            } catch (e: Exception) {
+                _uiState.update { it.copy(errorMessage = "Gagal menghapus sesi: ${e.message}") }
+            }
+        }
+    }
+
     fun refresh() = _uiState.update { it.copy(errorMessage = null, saving = false) }
 }
 
@@ -193,6 +206,13 @@ fun CreateStudySessionScreen(
                 navigationIcon = {
                     IconButton(onClick = onCancelled) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.form_cancel))
+                    }
+                },
+                actions = {
+                    if (sessionId != null) {
+                        IconButton(onClick = viewModel::deleteSession) {
+                            Icon(Icons.Filled.Delete, contentDescription = "Hapus Sesi", tint = MaterialTheme.colorScheme.error)
+                        }
                     }
                 }
             )

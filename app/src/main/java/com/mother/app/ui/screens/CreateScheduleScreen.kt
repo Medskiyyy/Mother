@@ -152,8 +152,19 @@ class CreateScheduleViewModel(
     fun deleteSchedule() {
         if (scheduleId == null) return
         viewModelScope.launch {
-            scheduleRepository.deleteById(scheduleId)
-            onSaved()
+            try {
+                val oldReminders = reminderRepository.getAllScheduleReminders().filter { it.scheduleId == scheduleId }
+                oldReminders.forEach { ReminderScheduler.cancel(context, ReminderScheduler.OWNER_SCHEDULE, scheduleId, it.id) }
+                reminderRepository.deleteScheduleReminders(scheduleId)
+            } catch (e: Exception) {
+                android.util.Log.w("CreateSchedule", "Failed to cancel reminders: ${e.message}")
+            }
+            try {
+                scheduleRepository.deleteById(scheduleId)
+                onSaved()
+            } catch (e: Exception) {
+                _uiState.update { it.copy(errorMessage = "Gagal menghapus jadwal: ${e.message}") }
+            }
         }
     }
 

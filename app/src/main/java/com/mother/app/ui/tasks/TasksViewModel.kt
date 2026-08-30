@@ -33,7 +33,11 @@ data class TasksUiState(
     val undoEvent: UndoEvent? = null
 )
 
-class TasksViewModel(private val taskRepository: TaskRepository) : ViewModel() {
+class TasksViewModel(
+    private val taskRepository: TaskRepository,
+    private val reminderRepository: com.mother.app.data.repository.ReminderRepository? = null,
+    private val context: android.content.Context? = null
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(TasksUiState())
     val uiState: StateFlow<TasksUiState> = _uiState.asStateFlow()
@@ -83,6 +87,13 @@ class TasksViewModel(private val taskRepository: TaskRepository) : ViewModel() {
 
     fun deleteTask(task: TaskEntity) {
         viewModelScope.launch {
+            try {
+                if (reminderRepository != null && context != null) {
+                    val oldReminders = reminderRepository.getAllTaskReminders().filter { it.taskId == task.id }
+                    oldReminders.forEach { com.mother.app.data.reminder.ReminderScheduler.cancel(context, com.mother.app.data.reminder.ReminderScheduler.OWNER_TASK, task.id, it.id) }
+                    reminderRepository.deleteTaskReminders(task.id)
+                }
+            } catch (_: Exception) {}
             taskRepository.deleteById(task.id)
             emitUndo(UndoType.DELETE, task)
         }
@@ -112,7 +123,13 @@ class TasksViewModel(private val taskRepository: TaskRepository) : ViewModel() {
 
     companion object {
         fun factory(container: AppContainer): ViewModelProvider.Factory = viewModelFactory {
-            initializer { TasksViewModel(taskRepository = container.taskRepository) }
+            initializer {
+                TasksViewModel(
+                    taskRepository = container.taskRepository,
+                    reminderRepository = container.reminderRepository,
+                    context = container.appContext
+                )
+            }
         }
     }
 }
