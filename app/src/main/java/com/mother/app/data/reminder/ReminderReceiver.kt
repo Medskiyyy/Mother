@@ -49,50 +49,38 @@ class ReminderReceiver : BroadcastReceiver() {
         )
         ringWakeLock?.acquire(10_000L)
 
-        val pending = goAsync()
         val container = (context.applicationContext as MotherApplication).container
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val title = loadTitle(container.reminderRepository, container, ownerType, ownerId)
-                if (title.isBlank()) {
-                    // Owner entity has been deleted; do not ring or notify
-                    return@launch
-                }
-                if (ownerType == ReminderScheduler.OWNER_HABIT) {
-                    // Start foreground service -- this is the ONLY reliable way to
-                    // show a full-screen alarm on Android 10+. Direct startActivity
-                    // from a BroadcastReceiver is blocked by the system.
-                    val serviceIntent = Intent(context, HabitAlarmService::class.java).apply {
-                        putExtra(ReminderScheduler.EXTRA_OWNER_TYPE, ownerType)
-                        putExtra(ReminderScheduler.EXTRA_OWNER_ID, ownerId)
-                        putExtra(ReminderScheduler.EXTRA_REMINDER_ID, reminderId)
-                        putExtra("title", title)
-                    }
-                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                        context.startForegroundService(serviceIntent)
-                    } else {
-                        context.startService(serviceIntent)
-                    }
 
-                    // Directly start AlarmActivity from AlarmClock broadcast
-                    val alarmIntent = Intent(context, AlarmActivity::class.java).apply {
-                        putExtra(ReminderScheduler.EXTRA_OWNER_TYPE, ownerType)
-                        putExtra(ReminderScheduler.EXTRA_OWNER_ID, ownerId)
-                        putExtra(ReminderScheduler.EXTRA_REMINDER_ID, reminderId)
-                        putExtra("title", title)
-                        addFlags(
-                            Intent.FLAG_ACTIVITY_NEW_TASK or
-                                Intent.FLAG_ACTIVITY_CLEAR_TOP or
-                                Intent.FLAG_ACTIVITY_SINGLE_TOP or
-                                Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
-                        )
-                    }
-                    try {
-                        context.startActivity(alarmIntent)
-                    } catch (e: Exception) {
-                        android.util.Log.d("ReminderReceiver", "Direct startActivity from receiver failed: ${e.message}")
-                    }
-                    // Re-schedule for the next day preserving exact wall-clock time
+        if (ownerType == ReminderScheduler.OWNER_HABIT) {
+            // Load title SYNCHRONOUSLY so we can start the service in the same
+            // onReceive() call frame.  Room queries take <100 ms – well within
+            // the 10-second BroadcastReceiver ANR timeout.
+            val title = kotlinx.coroutines.runBlocking(Dispatchers.IO) {
+                loadTitle(container.reminderRepository, container, ownerType, ownerId)
+            }
+            if (title.isBlank()) return
+
+            // Start HabitAlarmService SYNCHRONOUSLY — this is critical.
+            // AlarmManager.setAlarmClock() grants a Background Activity Start Exemption
+            // ONLY during the synchronous execution of onReceive().  If we start the
+            // service inside a coroutine, the exemption window has already closed and
+            // the service cannot call startActivity() for the full-screen alarm.
+            val serviceIntent = Intent(context, HabitAlarmService::class.java).apply {
+                putExtra(ReminderScheduler.EXTRA_OWNER_TYPE, ownerType)
+                putExtra(ReminderScheduler.EXTRA_OWNER_ID, ownerId)
+                putExtra(ReminderScheduler.EXTRA_REMINDER_ID, reminderId)
+                putExtra("title", title)
+            }
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                context.startForegroundService(serviceIntent)
+            } else {
+                context.startService(serviceIntent)
+            }
+
+            // Re-schedule for the next day in a background coroutine
+            val pending = goAsync()
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
                     val habitReminder = container.reminderRepository.getHabitReminder(reminderId)
                     val nextTrigger = if (habitReminder != null) {
                         val cal = java.util.Calendar.getInstance().apply {
@@ -109,8 +97,17 @@ class ReminderReceiver : BroadcastReceiver() {
                         container.reminderRepository.upsertHabitReminder(habitReminder.copy(triggerTime = nextTrigger))
                     }
                     ReminderScheduler.schedule(context, ownerType, ownerId, reminderId, nextTrigger)
-                } else {
-                    // Non-habit: standard notification only
+                } finally {
+                    pending.finish()
+                }
+            }
+        } else {
+            // Non-habit: standard notification (async is fine, no activity launch needed)
+            val pending = goAsync()
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    val title = loadTitle(container.reminderRepository, container, ownerType, ownerId)
+                    if (title.isBlank()) return@launch
                     val notificationManager =
                         context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
                     ensureChannel(notificationManager, context)
@@ -118,9 +115,9 @@ class ReminderReceiver : BroadcastReceiver() {
                         ReminderScheduler.requestCode(reminderId),
                         buildNotification(context, ownerType, ownerId, reminderId, title)
                     )
+                } finally {
+                    pending.finish()
                 }
-            } finally {
-                pending.finish()
             }
         }
     }

@@ -127,23 +127,21 @@ class HabitAlarmService : Service() {
 
     private fun ensureAlarmChannel() {
         val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        // Clean up old channel IDs that are cached with wrong settings
+        runCatching { nm.deleteNotificationChannel("mother_habit_alarm_v4_fullscreen") }
         var channel = nm.getNotificationChannel(ALARM_CHANNEL_ID)
         if (channel == null) {
             channel = NotificationChannel(
                 ALARM_CHANNEL_ID,
-                "Alarm Layar Penuh Kebiasaan",
+                "Alarm Kebiasaan",
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Layar penuh dan alarm untuk pengingat kebiasaan"
-                val soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-                    ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-                val audioAttributes = AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_ALARM)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                    .build()
-                setSound(soundUri, audioAttributes)
-                enableVibration(true)
-                vibrationPattern = longArrayOf(0, 1000, 500, 1000)
+                description = "Alarm layar penuh untuk pengingat kebiasaan"
+                // Sound and vibration are managed EXCLUSIVELY by HabitAlarmService's
+                // MediaPlayer & Vibrator.  The channel must be silent to prevent
+                // double-sound (OS channel sound + MediaPlayer playing simultaneously).
+                setSound(null, null)
+                enableVibration(false)
                 setBypassDnd(true)
                 lockscreenVisibility = Notification.VISIBILITY_PUBLIC
             }
@@ -264,7 +262,7 @@ class HabitAlarmService : Service() {
     }
 
     companion object {
-        const val ALARM_CHANNEL_ID = "mother_habit_alarm_v4_fullscreen"
+        const val ALARM_CHANNEL_ID = "mother_habit_alarm_v5"
         const val ALARM_NOTIFICATION_ID = 99999
         const val ACTION_STOP = "com.mother.app.action.STOP_HABIT_ALARM"
         const val ALARM_TIMEOUT_MS = 90_000L // 90 seconds timeout
