@@ -200,6 +200,10 @@
     <string name="priority_auto_description">Prioritas otomatis dihitung dari sisa waktu menuju deadline.</string>
     <string name="priority_auto_tag">Otomatis</string>
     <string name="permission_notification_denied">Pengingat tidak akan bekerja tanpa izin notifikasi. Aktifkan izin notifikasi di pengaturan sistem untuk menerima pengingat.</string>
+    <string name="permission_full_screen_title">Izin Alarm Layar Penuh</string>
+    <string name="permission_full_screen_message">Alarm kebiasaan tidak bisa muncul layar penuh saat HP terkunci tanpa izin ini. Aktifkan \"Notifikasi layar penuh\" untuk Mother di pengaturan.</string>
+    <string name="permission_full_screen_open">Buka Pengaturan</string>
+    <string name="permission_full_screen_later">Nanti</string>
 
     <!-- Missed Alarm / Reminder -->
     <string name="missed_alarm_channel_name">Alarm &amp; Pengingat Terlewat</string>

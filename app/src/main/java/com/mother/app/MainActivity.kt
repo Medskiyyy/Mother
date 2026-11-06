@@ -1,9 +1,13 @@
 package com.mother.app
 
 import android.Manifest
+import android.app.NotificationManager
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -153,12 +157,61 @@ class MainActivity : ComponentActivity() {
 
     private var showNotificationDeniedInfo by mutableStateOf(false)
 
+    private var showFullScreenIntentInfo by mutableStateOf(false)
+    private var fullScreenIntentInfoDismissed = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         requestNotificationPermissionIfNeeded()
         setContent {
             MotherApp()
             NotificationDeniedDialog()
+            FullScreenIntentDialog()
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        showFullScreenIntentInfo = !fullScreenIntentInfoDismissed && !canUseFullScreenIntent()
+    }
+
+    private fun canUseFullScreenIntent(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) return true
+        return getSystemService(NotificationManager::class.java).canUseFullScreenIntent()
+    }
+
+    @Composable
+    private fun FullScreenIntentDialog() {
+        if (showFullScreenIntentInfo) {
+            AlertDialog(
+                onDismissRequest = {
+                    fullScreenIntentInfoDismissed = true
+                    showFullScreenIntentInfo = false
+                },
+                title = { Text(stringResource(R.string.permission_full_screen_title)) },
+                text = { Text(stringResource(R.string.permission_full_screen_message)) },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showFullScreenIntentInfo = false
+                        startActivity(
+                            Intent(
+                                Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT,
+                                Uri.parse("package:$packageName")
+                            )
+                        )
+                    }) {
+                        Text(stringResource(R.string.permission_full_screen_open))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = {
+                        fullScreenIntentInfoDismissed = true
+                        showFullScreenIntentInfo = false
+                    }) {
+                        Text(stringResource(R.string.permission_full_screen_later))
+                    }
+                }
+            )
         }
     }
 
