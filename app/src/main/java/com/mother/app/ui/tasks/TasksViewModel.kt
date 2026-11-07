@@ -44,6 +44,9 @@ class TasksViewModel(
 
     private var eventCounter = 0L
 
+    /** Reminders removed with a deleted task, kept so undo can bring them back. */
+    private val deletedReminders = mutableMapOf<String, List<com.mother.app.data.local.entity.TaskReminderEntity>>()
+
     init {
         viewModelScope.launch {
             taskRepository.observeActiveTasks().collect { tasks ->
@@ -92,6 +95,7 @@ class TasksViewModel(
                     val oldReminders = reminderRepository.getAllTaskReminders().filter { it.taskId == task.id }
                     oldReminders.forEach { com.mother.app.data.reminder.ReminderScheduler.cancel(context, com.mother.app.data.reminder.ReminderScheduler.OWNER_TASK, task.id, it.id) }
                     reminderRepository.deleteTaskReminders(task.id)
+                    deletedReminders[task.id] = oldReminders
                 }
             } catch (_: Exception) {}
             taskRepository.deleteById(task.id)
@@ -106,9 +110,24 @@ class TasksViewModel(
             when (event.type) {
                 UndoType.COMPLETE -> taskRepository.reopen(event.task.id)
                 UndoType.REOPEN -> taskRepository.complete(event.task.id)
-                UndoType.DELETE -> taskRepository.upsert(event.task)
+                UndoType.DELETE -> {
+                    taskRepository.upsert(event.task)
+                    restoreReminders(event.task.id)
+                }
             }
             _uiState.update { it.copy(undoEvent = null) }
+        }
+    }
+
+    private suspend fun restoreReminders(taskId: String) {
+        val reminders = deletedReminders.remove(taskId) ?: return
+        if (reminderRepository == null || context == null) return
+        val now = System.currentTimeMillis()
+        reminders.forEach { reminder ->
+            reminderRepository.upsertTaskReminder(reminder)
+            if (reminder.enabled && reminder.triggerTime > now) {
+                com.mother.app.data.reminder.ReminderScheduler.schedule(context, com.mother.app.data.reminder.ReminderScheduler.OWNER_TASK, taskId, reminder.id, reminder.triggerTime)
+            }
         }
     }
 

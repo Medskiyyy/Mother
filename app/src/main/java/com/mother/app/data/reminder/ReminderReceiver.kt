@@ -11,6 +11,7 @@ import androidx.core.app.NotificationCompat
 import com.mother.app.MotherApplication
 import com.mother.app.MainActivity
 import com.mother.app.R
+import com.mother.app.data.model.StatusTask
 import com.mother.app.data.repository.ReminderRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -33,7 +34,7 @@ class ReminderReceiver : BroadcastReceiver() {
             ACTION_SNOOZE -> handleSnooze(context, ownerType, ownerId, reminderId)
             ACTION_SNOOZE_10 -> handleSnoozeMinutes(context, ownerType, ownerId, reminderId, 10)
             ACTION_DISMISS -> handleDismiss(context, ownerType, ownerId, reminderId)
-            ACTION_START -> handleStart(context, ownerType, ownerId, reminderId)
+            ACTION_START -> handleDismiss(context, ownerType, ownerId, reminderId)
             else -> handleRing(context, ownerType, ownerId, reminderId)
         }
     }
@@ -164,29 +165,14 @@ class ReminderReceiver : BroadcastReceiver() {
         dismissNotification(context, reminderId)
     }
 
-    /** "Mulai": dismiss the reminder and bring the user into the app. */
-    private fun handleStart(context: Context, ownerType: String, ownerId: String, reminderId: String) {
-        dismissNotification(context, reminderId)
-        val openIntent = Intent(context, MainActivity::class.java).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-        }
-        context.startActivity(openIntent)
-    }
-
-    private fun dismissNotification(context: Context, reminderId: String) {
-        val notificationManager =
-            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        notificationManager.cancel(ReminderScheduler.requestCode(reminderId))
-        notificationManager.cancel(ReminderScheduler.requestCode("missed_$reminderId"))
-    }
-
     private suspend fun loadTitle(
         reminderRepository: ReminderRepository,
         container: com.mother.app.di.AppContainer,
         ownerType: String,
         ownerId: String
     ): String = when (ownerType) {
-        ReminderScheduler.OWNER_TASK -> container.taskRepository.getById(ownerId)?.title
+        ReminderScheduler.OWNER_TASK -> container.taskRepository.getById(ownerId)
+            ?.takeIf { it.status != StatusTask.COMPLETED }?.title
         ReminderScheduler.OWNER_SCHEDULE -> container.scheduleRepository.getById(ownerId)?.title
         ReminderScheduler.OWNER_HABIT -> container.habitRepository.getById(ownerId)?.title
         else -> null
@@ -411,6 +397,13 @@ class ReminderReceiver : BroadcastReceiver() {
             )
         }
 
+        fun dismissNotification(context: Context, reminderId: String) {
+            val notificationManager =
+                context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.cancel(ReminderScheduler.requestCode(reminderId))
+            notificationManager.cancel(ReminderScheduler.requestCode("missed_$reminderId"))
+        }
+
         fun actionPendingIntent(
             context: Context,
             action: String,
@@ -418,6 +411,21 @@ class ReminderReceiver : BroadcastReceiver() {
             ownerId: String,
             reminderId: String
         ): PendingIntent {
+            if (action == ACTION_START) {
+                // Android 12+ blocks activity starts from a receiver tapped in a
+                // notification (trampoline), so "Mulai"/"Buka" opens MainActivity directly.
+                val openIntent = Intent(context, MainActivity::class.java).apply {
+                    this.action = ACTION_START
+                    putExtra(ReminderScheduler.EXTRA_REMINDER_ID, reminderId)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                }
+                return PendingIntent.getActivity(
+                    context,
+                    (action + reminderId).hashCode(),
+                    openIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+            }
             val intent = Intent(context, ReminderReceiver::class.java).apply {
                 this.action = action
                 putExtra(ReminderScheduler.EXTRA_OWNER_TYPE, ownerType)
@@ -443,6 +451,36 @@ class BootReceiver : BroadcastReceiver() {
         val container = (context.applicationContext as MotherApplication).container
         CoroutineScope(Dispatchers.IO).launch {
             try {
+                rescheduleAll(context, container, notifyMissed = true)
+            } finally {
+                pending.finish()
+            }
+        }
+    }
+
+    companion object {
+        private const val PREFS = "mother_reminder_state"
+        private const val KEY_RESCHEDULE_PENDING = "reschedulePending"
+
+        /** Marks that alarms must be re-armed on the next app start (after a backup restore). */
+        fun markReschedulePending(context: Context) {
+            context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                .edit().putBoolean(KEY_RESCHEDULE_PENDING, true).commit()
+        }
+
+        /** Re-arms every reminder if a restore requested it; clears the request. */
+        suspend fun rescheduleIfPending(context: Context, container: com.mother.app.di.AppContainer) {
+            val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            if (!prefs.getBoolean(KEY_RESCHEDULE_PENDING, false)) return
+            rescheduleAll(context, container, notifyMissed = false)
+            prefs.edit().remove(KEY_RESCHEDULE_PENDING).apply()
+        }
+
+        suspend fun rescheduleAll(
+            context: Context,
+            container: com.mother.app.di.AppContainer,
+            notifyMissed: Boolean
+        ) {
                 val now = System.currentTimeMillis()
                 container.reminderRepository.getAllTaskReminders()
                     .filter { it.enabled && it.triggerTime > now }
@@ -482,7 +520,7 @@ class BootReceiver : BroadcastReceiver() {
                             container.reminderRepository.upsertHabitReminder(reminder.copy(triggerTime = targetTime))
 
                             // Send missed notification if missed within the last 12 hours
-                            if (now - reminder.triggerTime <= 12 * 60 * 60_000L) {
+                            if (notifyMissed && now - reminder.triggerTime <= 12 * 60 * 60_000L) {
                                 val habit = container.habitRepository.getById(reminder.habitId)
                                 ReminderReceiver.showMissedHabitNotification(
                                     context,
@@ -500,9 +538,6 @@ class BootReceiver : BroadcastReceiver() {
                             targetTime
                         )
                     }
-            } finally {
-                pending.finish()
-            }
         }
     }
 }

@@ -2,7 +2,9 @@ package com.mother.app.widget
 
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
+import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
 import android.widget.RemoteViews
 import com.mother.app.MotherApplication
 import com.mother.app.R
@@ -52,6 +54,20 @@ class MotherWidgetProvider : AppWidgetProvider() {
             } finally {
                 pending.finish()
             }
+        }
+    }
+
+    companion object {
+        /** Re-renders every placed widget now instead of waiting for the system cycle. */
+        fun requestUpdate(context: Context) {
+            val ids = AppWidgetManager.getInstance(context)
+                .getAppWidgetIds(ComponentName(context, MotherWidgetProvider::class.java))
+            if (ids.isEmpty()) return
+            context.sendBroadcast(
+                Intent(context, MotherWidgetProvider::class.java)
+                    .setAction(AppWidgetManager.ACTION_APPWIDGET_UPDATE)
+                    .putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids)
+            )
         }
     }
 }

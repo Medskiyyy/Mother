@@ -2,6 +2,7 @@ package com.mother.app.data.backup
 
 import android.content.Context
 import android.net.Uri
+import com.mother.app.data.reminder.BootReceiver
 import com.mother.app.di.AppContainer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -43,6 +44,7 @@ class BackupManager(private val context: Context, private val container: AppCont
                 input.copyTo(output)
             }
         } ?: error("Tidak dapat membaca file backup.")
+        BootReceiver.markReschedulePending(context)
     }
 
     companion object {

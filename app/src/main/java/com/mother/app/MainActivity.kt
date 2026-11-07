@@ -65,7 +65,10 @@ import com.mother.app.data.local.entity.HabitEntity
 import com.mother.app.data.model.Theme
 import com.mother.app.ui.components.ActiveTimerBanner
 import com.mother.app.ui.components.UpdateDialog
+import com.mother.app.data.reminder.ReminderReceiver
+import com.mother.app.data.reminder.ReminderScheduler
 import com.mother.app.data.timer.ActiveTimerStore
+import com.mother.app.data.timer.TimerPhase
 import com.mother.app.data.timer.TimerService
 import com.mother.app.ui.dashboard.DashboardScreen
 import com.mother.app.ui.dashboard.DashboardViewModel
@@ -163,11 +166,30 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         requestNotificationPermissionIfNeeded()
+        dismissReminderFrom(intent)
+        // Only a RUNNING timer gets the foreground notification — starting the
+        // service for a paused timer flashes a notification that immediately
+        // disappears, so paused timers stay silent.
+        if (ActiveTimerStore.activeTimer.value?.phase == TimerPhase.RUNNING) {
+            TimerService.start(this)
+        }
         setContent {
             MotherApp()
             NotificationDeniedDialog()
             FullScreenIntentDialog()
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        dismissReminderFrom(intent)
+    }
+
+    /** A reminder's "Mulai"/"Buka" action opens the app and clears that reminder. */
+    private fun dismissReminderFrom(intent: Intent?) {
+        if (intent?.action != ReminderReceiver.ACTION_START) return
+        val reminderId = intent.getStringExtra(ReminderScheduler.EXTRA_REMINDER_ID) ?: return
+        ReminderReceiver.dismissNotification(this, reminderId)
     }
 
     override fun onResume() {
