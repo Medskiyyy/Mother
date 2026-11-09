@@ -53,6 +53,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
@@ -404,7 +405,8 @@ class MainActivity : ComponentActivity() {
                                             Text(
                                                 text = stringResource(destination.labelRes),
                                                 style = MaterialTheme.typography.labelSmall.copy(
-                                                    fontWeight = if (selected) androidx.compose.ui.text.font.FontWeight.Black else androidx.compose.ui.text.font.FontWeight.Bold
+                                                    fontWeight = if (selected) androidx.compose.ui.text.font.FontWeight.Black else androidx.compose.ui.text.font.FontWeight.Bold,
+                                                    letterSpacing = 0.sp
                                                 ),
                                                 maxLines = 1,
                                                 softWrap = false
